@@ -1,7 +1,7 @@
 {
   "name": "@botbind/nebula",
   "version": "0.0.0",
-  "description": "Event-based Discord bot framework for quick bot development",
+  "description": "A lifecycle based Discord framework, completely modular and customisable!",
   "main": "dist/index.js",
   "repository": {
     "type": "git",
