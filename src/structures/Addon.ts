@@ -23,7 +23,6 @@ const defaultOptions = {
   },
   createFoldersIfNotExisted: true,
   ignoreGroupFolderName: 'ignore',
-  enableLifecycleLogging: true,
 };
 
 export default abstract class Addon {
