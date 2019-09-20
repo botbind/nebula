@@ -20,6 +20,6 @@ class TestAddon extends Addon {
   }
 }
 
-const client = new TestClient();
+const client = new TestClient({ debug: true });
 
 client.load(TestAddon).login(process.env.DISCORD_TOKEN);
