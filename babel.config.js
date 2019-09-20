@@ -1,4 +1,4 @@
-module.exports = {
+const config = {
   presets: [
     [
       '@babel/preset-env',
@@ -12,3 +12,7 @@ module.exports = {
   ],
   ignore: ['node_modules'],
 };
+
+if (process.env.NODE_ENV === 'production') config.ignore.push('__tests__');
+
+module.exports = config;
