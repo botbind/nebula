@@ -123,9 +123,12 @@ export default abstract class Addon {
     );
 
     commands.forEach(command => {
+      if (this.client.options.debug)
+        Debugger.info(`${command.resource.name} shouldCommandReady`, 'Lifecycle');
       if (command.resource.shouldCommandReady && !command.resource.shouldCommandReady(message))
         return;
 
+      if (this.client.options.debug) Debugger.info(`${command.resource.name} ready`, 'Lifecycle');
       command.resource.ready(message);
     });
   }
