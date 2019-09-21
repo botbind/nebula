@@ -51,8 +51,7 @@ Here you go
 
 ```javascript
 // index.js
-import 'dotenv/config';
-import { Client, Addon } from '..';
+const { Client, Addon } = require('@botbind/nebula');
 
 class MyClient extends Client {
   ready() {
@@ -78,10 +77,10 @@ const client = new MyClient({ debug: true });
 client.load(MyAddon).login(/* your token */);
 
 // commands/SayHi.js
-import Discord from 'discord.js';
-import { Command } from '../..';
+const Discord = require('discord.js');
+const { Command } = require('@botbind/nebula');
 
-export default class SayHi extends Command {
+module.exports = class SayHi extends Command {
   constructor(client) {
     super(client, {
       name: 'test',
