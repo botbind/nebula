@@ -89,8 +89,56 @@ module.exports = class SayHi extends Command {
     });
   }
 
-  public async didDispatch(message, [name]) {
+  async didDispatch(message, [name]) {
     message.channel.send(`Hi, ${name}`);
   }
+};
+```
+
+Ah ha, looks pretty clean doesn't it? For Typescripters:
+
+```typescript
+// index.ts
+const { Client, Addon } = require('@botbind/nebula');
+
+class MyClient extends Client {
+  ready() {
+    this.user.setActivity("Hello, I'm ready");
+  }
 }
+
+class MyAddon extends Addon {
+  constructor(client: Client) {
+    super(client, {
+      name: 'test-addon',
+      baseDir: __dirname,
+      folderName: {
+        commands: 'command',
+        tasks: 'scheduledTasks',
+      },
+    });
+  }
+}
+
+const client = new MyClient({ debug: true });
+
+client.load(MyAddon).login(/* your token */);
+
+// commands/SayHi.ts
+const Discord = require('discord.js');
+const { Command, Client } = require('@botbind/nebula');
+
+module.exports = class SayHi extends Command {
+  constructor(client: Client) {
+    super(client, {
+      name: 'test',
+      alias: ['t'],
+      schema: [Validator.any],
+    });
+  }
+
+  public async didDispatch(message: Discord.Message, [name]: string[]) {
+    message.channel.send(`Hi, ${name}`);
+  }
+};
 ```
