@@ -27,6 +27,10 @@ module.exports = class MyCommand extends Command {
 };
 ```
 
+#### Wait!!! Before we move on, what's up with the name?
+
+Nebula is the earliest stage of a star, a collection of dust and gases. We believe that your imaginations are just like those little particles in the universe, when put together correctly, with the right aid and support, they're gonna shine and excel!
+
 ### But I'm not convinced. Give me more features please! 😔
 
 #### Addons 🔨🔧
