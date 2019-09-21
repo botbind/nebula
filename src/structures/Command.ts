@@ -25,10 +25,15 @@ export default abstract class Command {
 
   public abstract didDispatch(message: Discord.Message, args: (string | number | boolean)[]): void;
 
+  public didCatchValidationError(message: Discord.Message, errs: ValidationError[]) {
+    errs.forEach(err => {
+      message.channel.send(err.message);
+    });
+  }
+
   public shouldCommandDispatch?(message: Discord.Message): boolean;
   public willDispatch?(message: Discord.Message): void;
   public didSuccessfullyDispatch?(message: Discord.Message): void;
   public didFailedDispatch?(message: Discord.Message): void;
-  public didCatchValidationError?(message: Discord.Message, error: ValidationError[]): void;
   public didLoad?(): void;
 }
