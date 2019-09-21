@@ -1,5 +1,5 @@
 import 'dotenv/config';
-import { Client, Addon, GuildSettings } from '..';
+import { Client, Addon } from '..';
 
 class TestClient extends Client {
   ready() {
@@ -8,8 +8,8 @@ class TestClient extends Client {
 }
 
 class TestAddon extends Addon {
-  constructor(client: Client, guildSettings: GuildSettings) {
-    super(client, guildSettings, {
+  constructor(client: Client) {
+    super(client, {
       name: 'test-addon',
       baseDir: __dirname,
       folderName: {

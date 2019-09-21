@@ -1,6 +1,7 @@
 import Discord from 'discord.js';
 import merge from 'lodash/merge';
 import isPlainObject from 'lodash/isPlainObject';
+import ValidationError from './ValidationError';
 import { CommandOptions } from '../types';
 
 const defaultOptions = {
@@ -22,8 +23,12 @@ export default abstract class Command {
     this.options = rest;
   }
 
-  protected abstract ready(message: Discord.Message): void;
+  public abstract didDispatch(message: Discord.Message, args: (string | number | boolean)[]): void;
 
-  public shouldCommandReady?(message: Discord.Message): boolean;
-  public loaded?(): void;
+  public shouldCommandDispatch?(message: Discord.Message): boolean;
+  public willDispatch?(message: Discord.Message): void;
+  public didSuccessfullyDispatch?(message: Discord.Message): void;
+  public didFailedDispatch?(message: Discord.Message): void;
+  public didCatchValidationError?(message: Discord.Message, error: ValidationError[]): void;
+  public didLoad?(): void;
 }

@@ -7,14 +7,8 @@ import Client from './Client';
 import Task from './Task';
 import Command from './Command';
 import Debugger from './Debugger';
-import {
-  AddonOptions,
-  ResourceList,
-  Resource,
-  Constructor,
-  CommandComponents,
-  GuildSettings,
-} from '../types';
+import ValidationError from './ValidationError';
+import { AddonOptions, ResourceList, Resource, Constructor, CommandComponents } from '../types';
 
 const defaultOptions = {
   folderName: {
@@ -27,18 +21,16 @@ const defaultOptions = {
 
 export default abstract class Addon {
   protected client: Client;
-  private guildSettings: GuildSettings;
   public readonly name: string;
   public readonly options: Omit<AddonOptions & typeof defaultOptions, 'name'>;
   public readonly resources: ResourceList;
 
-  constructor(client: Client, guildSettings: GuildSettings, options: AddonOptions) {
+  constructor(client: Client, options: AddonOptions) {
     if (!isPlainObject(options)) throw new TypeError('addonOptions must be an object');
 
     const { name, ...rest } = merge(defaultOptions, options);
 
     this.client = client;
-    this.guildSettings = guildSettings;
     this.name = name;
     this.options = rest;
     this.resources = [];
@@ -87,9 +79,6 @@ export default abstract class Addon {
         }
       });
     });
-
-    if (this.client.options.debug) Debugger.info('Addon afterResourcesLoaded', 'Lifecycle');
-    if (this.afterResourcesLoaded) this.afterResourcesLoaded();
   }
 
   private static isResourceLoadable(path: string) {
@@ -105,8 +94,8 @@ export default abstract class Addon {
 
     const resource = new Resource(this.client);
 
-    if (this.client.options.debug) Debugger.info(`${resource.name} loaded`, 'Lifecycle');
-    if (resource.loaded) resource.loaded();
+    if (this.client.options.debug) Debugger.info(`${resource.name} didLoad`, 'Lifecycle');
+    if (resource.didLoad) resource.didLoad();
 
     return resource;
   }
@@ -114,7 +103,7 @@ export default abstract class Addon {
   public dispatch(message: Discord.Message) {
     const [prefix, commandName, commandArgs] = Addon.parseCommand(message.content);
 
-    if (message.author.bot || prefix !== this.guildSettings.prefix) return;
+    if (message.author.bot || prefix !== this.client.options.prefix) return;
 
     const commands = this.resources.filter(
       ({ category, resource }) =>
@@ -122,14 +111,34 @@ export default abstract class Addon {
         (resource.name === commandName || resource.options.alias.includes(commandName)),
     );
 
-    commands.forEach(command => {
-      if (this.client.options.debug)
-        Debugger.info(`${command.resource.name} shouldCommandReady`, 'Lifecycle');
-      if (command.resource.shouldCommandReady && !command.resource.shouldCommandReady(message))
-        return;
+    commands.forEach(({ resource }) => {
+      if (this.client.options.debug) Debugger.info(`${resource.name} willDispatch`, 'Lifecycle');
+      if (resource.willDispatch) resource.willDispatch(message);
 
-      if (this.client.options.debug) Debugger.info(`${command.resource.name} ready`, 'Lifecycle');
-      command.resource.ready(message);
+      if (this.client.options.debug)
+        Debugger.info(`${resource.name} shouldCommandDispatch`, 'Lifecycle');
+      if (resource.shouldCommandDispatch && !resource.shouldCommandDispatch(message)) return;
+
+      const validatedArgs = [];
+
+      if (resource.options.schema) {
+        for (let i = 0; i < resource.options.schema.length; i += 1) {
+          const [errors, validatedValue] = resource.options.schema[i](commandArgs[i]);
+
+          if (errors && resource.didCatchValidationError) {
+            if (this.client.options.debug)
+              Debugger.info(`${resource.name} didCatchValidationError`, 'Lifecycle');
+            resource.didCatchValidationError(message, errors);
+
+            return;
+          }
+
+          validatedArgs.push(validatedValue as string | number | boolean);
+        }
+      }
+
+      if (this.client.options.debug) Debugger.info(`${resource.name} didDispatch`, 'Lifecycle');
+      resource.didDispatch(message, validatedArgs);
     });
   }
 
@@ -142,7 +151,6 @@ export default abstract class Addon {
     return [content.substring(0, 1), commandName, commandArgs];
   }
 
-  public ready?(): void;
-  public loaded?(): void;
-  protected afterResourcesLoaded?(): void;
+  public didReady?(): void;
+  public didLoad?(): void;
 }

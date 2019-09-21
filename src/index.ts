@@ -2,6 +2,8 @@ import Client from './structures/Client';
 import Addon from './structures/Addon';
 import Debugger from './structures/Debugger';
 import Command from './structures/Command';
+import Validator from './structures/Validator';
+import ValidationError from './structures/ValidationError';
 import {
   ClientOptions,
   AddonOptions,
@@ -10,7 +12,9 @@ import {
   Resource,
   LogTypes,
   FolderName,
-  GuildSettings,
+  ValidatorFunc,
+  ValidatorOptions,
+  ValidationResults,
 } from './types';
 
 export default Client;
@@ -26,5 +30,9 @@ export {
   LogTypes,
   FolderName,
   Debugger,
-  GuildSettings,
+  ValidatorFunc,
+  ValidatorOptions,
+  Validator,
+  ValidationError,
+  ValidationResults,
 };

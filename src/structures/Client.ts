@@ -26,17 +26,18 @@ export default class NebulaClient extends Discord.Client {
 
     this.options = mergedOptions;
     this.on('ready', () => {
-      if (this.options.debug) Debugger.info('Client ready', 'Lifecycle');
-      if (this.ready) this.ready();
+      if (this.options.debug) Debugger.info('Client didReady', 'Lifecycle');
+      if (this.didReady) this.didReady();
 
       addons.forEach(addon => {
         addon.loadResources();
 
-        if (this.options.debug) Debugger.info(`${addon.name} ready`, 'Lifecycle');
-        if (addon.ready) addon.ready();
+        if (this.options.debug) Debugger.info(`${addon.name} didReady`, 'Lifecycle');
+        if (addon.didReady) addon.didReady();
       });
     }).on('message', (message: Discord.Message) => {
       if (this.options.debug) Debugger.info('Client message', 'Lifecycle');
+      if (this.didMessage) this.didMessage(message);
 
       addons.forEach(addon => {
         addon.dispatch(message);
@@ -48,22 +49,16 @@ export default class NebulaClient extends Discord.Client {
     if (Addon.prototype instanceof Addon)
       throw new TypeError('addon must inherit of the Addon class');
 
-    const addon = new Addon(this, {
-      prefix: this.options.prefix,
-    });
+    const addon = new Addon(this);
 
     addons.push(addon);
 
-    if (this.options.debug) Debugger.info(`${addon.name} loaded`, 'Lifecycle');
-    if (addon.loaded) addon.loaded();
-
-    if (this.options.debug) Debugger.info('Client afterAddonLoaded', 'Lifecycle');
-    if (this.afterAddonLoaded) this.afterAddonLoaded(addon);
+    if (this.options.debug) Debugger.info(`${addon.name} load`, 'Lifecycle');
+    if (addon.didLoad) addon.didLoad();
 
     return this;
   }
 
-  protected ready?(): void;
-  protected afterAddonLoaded?(addon: Addon): void;
-  protected message?(message: Discord.Message): void;
+  protected didReady?(): void;
+  protected didMessage?(message: Discord.Message): void;
 }

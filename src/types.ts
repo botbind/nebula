@@ -1,6 +1,7 @@
 import Discord from 'discord.js';
 import Command from './structures/Command';
 import Task from './structures/Task';
+import ValidationError from './structures/ValidationError';
 
 export interface Constructor<T> {
   new (...args: any[]): T;
@@ -15,10 +16,6 @@ export interface ResourceInfo {
 }
 
 export type ResourceList = ResourceInfo[];
-
-export interface GuildSettings {
-  prefix: string;
-}
 
 export interface ClientOptions extends Discord.ClientOptions {
   debug?: boolean;
@@ -39,13 +36,26 @@ export interface AddonOptions {
   ignoreGroupFolderName?: string;
 }
 
+export type ValidationResults<T extends number | boolean | string = number | boolean | string> = [
+  ValidationError[] | null,
+  T | null,
+];
+
+export type ValidatorFunc = (value: string) => ValidationResults;
+
 export interface CommandOptions {
   name: string;
   alias?: string[];
+  schema?: ValidatorFunc[];
 }
 
 export interface TaskOptions {
   name: string;
+}
+
+export interface ValidatorOptions {
+  abortEarly?: boolean;
+  coerce?: boolean;
 }
 
 export type CommandComponents = [string, string, string[]];
