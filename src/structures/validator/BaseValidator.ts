@@ -22,7 +22,6 @@ export default class BaseValidator<
     this.errs = [];
 
     let returnValue: string | T | null | undefined = value;
-    let failedRequired = false;
 
     if (value) {
       for (const rule of this.schema.rules) {
@@ -31,15 +30,14 @@ export default class BaseValidator<
 
         if (options.abortEarly && !results) break;
       }
+
+      if (options.coerce && this.coerce) {
+        returnValue = this.coerce(value);
+      }
     } else if (this.schema.flags.required) {
-      this.errs.push(new ValidationError(value, this.type));
+      this.errs.push(new ValidationError(undefined, this.type));
 
-      failedRequired = true;
-    }
-
-    if (options.coerce) {
-      if (failedRequired) returnValue = null;
-      else if (this.coerce && value) returnValue = this.coerce(value);
+      if (options.coerce) returnValue = null;
     }
 
     return [this.errs.length ? this.errs : null, returnValue];

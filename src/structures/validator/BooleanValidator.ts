@@ -1,8 +1,8 @@
 import BaseValidator from './BaseValidator';
 import ValidationError from './ValidationError';
 
-const truthyValues = ['true', '1', 1, '+'];
-const falsyValues = ['false', '0', 0, '-'];
+const truthyValues = ['true', '1', '+'];
+const falsyValues = ['false', '0', '-'];
 
 export default class BooleanValidator extends BaseValidator<boolean> {
   constructor() {
@@ -10,7 +10,7 @@ export default class BooleanValidator extends BaseValidator<boolean> {
 
     this.schema.rules.push({
       method: (value: string) => {
-        if (truthyValues.concat(falsyValues).includes(value)) return true;
+        if (this.coerce(value) !== null) return true;
 
         this.errs.push(new ValidationError(value, 'boolean'));
 
@@ -29,8 +29,7 @@ export default class BooleanValidator extends BaseValidator<boolean> {
   public truthy() {
     this.schema.rules.push({
       method: (value: string) => {
-        if (truthyValues.includes(value)) return true;
-
+        if (this.coerce(value)) return true;
         this.errs.push(new ValidationError(value, 'boolean.truthy'));
 
         return false;
@@ -43,7 +42,8 @@ export default class BooleanValidator extends BaseValidator<boolean> {
   public falsy() {
     this.schema.rules.push({
       method: (value: string) => {
-        if (falsyValues.includes(value)) return true;
+        const coerced = this.coerce(value);
+        if (coerced !== null && !coerced) return true;
 
         this.errs.push(new ValidationError(value, 'boolean.falsy'));
 
