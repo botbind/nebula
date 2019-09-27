@@ -30,6 +30,7 @@ export default class BooleanValidator extends BaseValidator<boolean> {
     this.schema.rules.push({
       method: (value: string) => {
         if (this.coerce(value)) return true;
+
         this.errs.push(new ValidationError(value, 'boolean.truthy'));
 
         return false;
