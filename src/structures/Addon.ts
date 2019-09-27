@@ -124,7 +124,12 @@ export default abstract class Addon {
         }
       }
 
-      const isSuccessfullyDispatched = this.client.callLifecycle('didDispatch', resource, message);
+      const isSuccessfullyDispatched = this.client.callLifecycle(
+        'didDispatch',
+        resource,
+        message,
+        validatedArgs,
+      );
 
       if (isSuccessfullyDispatched !== undefined && !isSuccessfullyDispatched) {
         this.client.callLifecycle('didFailedDispatch', resource, message);
