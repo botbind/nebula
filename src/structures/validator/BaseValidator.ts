@@ -25,8 +25,7 @@ export default class BaseValidator<
 
     if (value) {
       for (const rule of this.schema.rules) {
-        const args = rule.args != null ? rule.args : undefined;
-        const results = rule.method(value, args);
+        const results = rule(value);
 
         if (options.abortEarly && !results) break;
       }

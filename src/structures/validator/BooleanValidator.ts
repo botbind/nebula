@@ -8,14 +8,12 @@ export default class BooleanValidator extends BaseValidator<boolean> {
   constructor() {
     super('boolean');
 
-    this.schema.rules.push({
-      method: (value: string) => {
-        if (this.coerce(value) !== null) return true;
+    this.schema.rules.push((value: string) => {
+      if (this.coerce(value) !== null) return true;
 
-        this.errs.push(new ValidationError(value, 'boolean'));
+      this.errs.push(new ValidationError(value, 'boolean'));
 
-        return false;
-      },
+      return false;
     });
   }
 
@@ -27,29 +25,25 @@ export default class BooleanValidator extends BaseValidator<boolean> {
   }
 
   public truthy() {
-    this.schema.rules.push({
-      method: (value: string) => {
-        if (this.coerce(value)) return true;
+    this.schema.rules.push((value: string) => {
+      if (this.coerce(value)) return true;
 
-        this.errs.push(new ValidationError(value, 'boolean.truthy'));
+      this.errs.push(new ValidationError(value, 'boolean.truthy'));
 
-        return false;
-      },
+      return false;
     });
 
     return this;
   }
 
   public falsy() {
-    this.schema.rules.push({
-      method: (value: string) => {
-        const coerced = this.coerce(value);
-        if (coerced !== null && !coerced) return true;
+    this.schema.rules.push((value: string) => {
+      const coerced = this.coerce(value);
+      if (coerced !== null && !coerced) return true;
 
-        this.errs.push(new ValidationError(value, 'boolean.falsy'));
+      this.errs.push(new ValidationError(value, 'boolean.falsy'));
 
-        return false;
-      },
+      return false;
     });
 
     return this;

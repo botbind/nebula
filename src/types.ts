@@ -48,12 +48,6 @@ export type ValidationResults = [
   string | number | boolean | undefined | null,
 ];
 
-export interface ValidationRule {
-  method: ValidationMethod;
-  args?: Record<string, any>;
-  validWhen?: boolean;
-}
-
 export interface ValidationFlags {
   required?: boolean;
 }
@@ -61,7 +55,7 @@ export interface ValidationFlags {
 export interface Schema {
   type: string;
   flags: ValidationFlags;
-  rules: ValidationRule[];
+  rules: ValidationMethod[];
 }
 
 export interface CommandOptions {
