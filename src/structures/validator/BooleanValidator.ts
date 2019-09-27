@@ -20,8 +20,8 @@ export default class BooleanValidator extends BaseValidator<boolean> {
   }
 
   public coerce(value: string) {
-    if (value && truthyValues.includes(value)) return true;
-    if (value && falsyValues.includes(value)) return false;
+    if (truthyValues.includes(value)) return true;
+    if (falsyValues.includes(value)) return false;
 
     return null;
   }
