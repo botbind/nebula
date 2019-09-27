@@ -21,7 +21,7 @@ export default class NebulaClient extends Discord.Client {
   constructor(options: ClientOptions = {}) {
     if (!isPlainObject(options)) throw new TypeError('clientOptions must be an object');
 
-    const mergedOptions = merge(defaultOptions, options);
+    const mergedOptions = merge({}, defaultOptions, options);
 
     super(mergedOptions);
 

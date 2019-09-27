@@ -30,7 +30,7 @@ export default abstract class Addon {
   constructor(client: Client, options: AddonOptions) {
     if (!isPlainObject(options)) throw new TypeError('addonOptions must be an object');
 
-    const { name, ...rest } = merge(defaultOptions, options);
+    const { name, ...rest } = merge({}, defaultOptions, options);
 
     this.client = client;
     this.name = name;

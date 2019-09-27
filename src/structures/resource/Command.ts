@@ -16,7 +16,7 @@ export default abstract class Command {
   constructor(client: Discord.Client, options: CommandOptions) {
     if (!isPlainObject(options)) throw new TypeError('commandOptions must be an object');
 
-    const { name, ...rest } = merge(defaultOptions, options);
+    const { name, ...rest } = merge({}, defaultOptions, options);
 
     this.client = client;
     this.name = name;
