@@ -1,5 +1,5 @@
 import Discord from 'discord.js';
-import { Command, Client, Validator, ValidationError } from '../..';
+import { Command, Client, Validator } from '../..';
 
 export default class TestCommand extends Command {
   constructor(client: Client) {
