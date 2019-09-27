@@ -4,10 +4,8 @@ import Discord from 'discord.js';
 import isPlainObject from 'lodash/isPlainObject';
 import merge from 'lodash/merge';
 import Client from './Client';
-import Task from './Task';
-import Command from './Command';
-import Debugger from './Debugger';
-import ValidationError from './ValidationError';
+import Task from './resource/Task';
+import Command from './resource/Command';
 import { AddonOptions, ResourceList, Resource, Constructor, CommandComponents } from '../types';
 
 const defaultOptions = {
@@ -17,6 +15,10 @@ const defaultOptions = {
   },
   createFoldersIfNotExisted: true,
   ignoreGroupFolderName: 'ignore',
+  validator: {
+    coerce: true,
+    abortEarly: true,
+  },
 };
 
 export default abstract class Addon {
@@ -54,50 +56,33 @@ export default abstract class Addon {
           fs.readdirSync(groupPath).forEach(resourceName => {
             const resourcePath = path.resolve(groupPath, resourceName);
 
-            if (Addon.isResourceLoadable(resourcePath)) {
-              const resource = this.loadResource(resourcePath);
-
-              if (!resource) return;
-
-              this.resources.push({
-                resource,
-                category,
-                group: actualGroupName,
-              });
-            }
+            this.loadResource(resourcePath, category, actualGroupName);
           });
-        } else if (Addon.isResourceLoadable(groupPath)) {
-          const resource = this.loadResource(groupPath);
 
-          if (!resource) return;
-
-          this.resources.push({
-            resource,
-            category,
-            group: 'nebula-ignore',
-          });
+          return;
         }
+
+        this.loadResource(groupPath, category, 'nebula-ignore');
       });
     });
   }
 
-  private static isResourceLoadable(path: string) {
-    return fs.lstatSync(path).isFile() && (path.endsWith('.js') || path.endsWith('.ts'));
-  }
+  private loadResource(path: string, category: string, group: string) {
+    if (fs.lstatSync(path).isFile() && (path.endsWith('.js') || path.endsWith('.ts'))) {
+      const resourceReq = require(path);
 
-  private loadResource(path: string) {
-    const resourceReq = require(path);
+      const Resource: Constructor<Resource> = resourceReq.default || resourceReq;
 
-    const Resource: Constructor<Resource> = resourceReq.default || resourceReq;
+      if (Resource.prototype instanceof Command || Resource.prototype instanceof Task) {
+        const resource = new Resource(this.client);
 
-    if (!(Resource.prototype instanceof Command || Resource.prototype instanceof Task)) return;
-
-    const resource = new Resource(this.client);
-
-    if (this.client.options.debug) Debugger.info(`${resource.name} didLoad`, 'Lifecycle');
-    if (resource.didLoad) resource.didLoad();
-
-    return resource;
+        this.resources.push({
+          resource,
+          category,
+          group,
+        });
+      }
+    }
   }
 
   public dispatch(message: Discord.Message) {
@@ -112,33 +97,42 @@ export default abstract class Addon {
     );
 
     commands.forEach(({ resource }) => {
-      if (this.client.options.debug) Debugger.info(`${resource.name} willDispatch`, 'Lifecycle');
-      if (resource.willDispatch) resource.willDispatch(message);
+      const shouldDispatch: boolean | undefined = this.client.callLifecycle(
+        'willDispatch',
+        resource,
+        message,
+      );
 
-      if (this.client.options.debug)
-        Debugger.info(`${resource.name} shouldCommandDispatch`, 'Lifecycle');
-      if (resource.shouldCommandDispatch && !resource.shouldCommandDispatch(message)) return;
+      if (shouldDispatch !== undefined && !shouldDispatch) return;
 
       const validatedArgs = [];
 
       if (resource.options.schema) {
         for (let i = 0; i < resource.options.schema.length; i += 1) {
-          const [errors, validatedValue] = resource.options.schema[i](commandArgs[i]);
+          const [errors, validatedValue] = resource.options.schema[i].validate(
+            commandArgs[i],
+            this.options.validator,
+          );
 
-          if (errors && resource.didCatchValidationError) {
-            if (this.client.options.debug)
-              Debugger.info(`${resource.name} didCatchValidationError`, 'Lifecycle');
-            resource.didCatchValidationError(message, errors);
+          if (errors) {
+            this.client.callLifecycle('didCatchValidationError', resource, message, errors);
 
             return;
           }
 
-          validatedArgs.push(validatedValue as string | number | boolean);
+          validatedArgs.push(validatedValue);
         }
       }
 
-      if (this.client.options.debug) Debugger.info(`${resource.name} didDispatch`, 'Lifecycle');
-      resource.didDispatch(message, validatedArgs);
+      const isSuccessfullyDispatched = this.client.callLifecycle('didDispatch', resource, message);
+
+      if (isSuccessfullyDispatched !== undefined && !isSuccessfullyDispatched) {
+        this.client.callLifecycle('didFailedDispatch', resource, message);
+
+        return;
+      }
+
+      this.client.callLifecycle('didSuccessfulDispatch', resource, message);
     });
   }
 
@@ -152,5 +146,4 @@ export default abstract class Addon {
   }
 
   public didReady?(): void;
-  public didLoad?(): void;
 }

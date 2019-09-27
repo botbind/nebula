@@ -1,8 +1,8 @@
 import Discord from 'discord.js';
 import merge from 'lodash/merge';
 import isPlainObject from 'lodash/isPlainObject';
-import ValidationError from './ValidationError';
-import { CommandOptions } from '../types';
+import ValidationError from '../validator/ValidationError';
+import { CommandOptions } from '../../types';
 
 const defaultOptions = {
   alias: [],
@@ -23,17 +23,19 @@ export default abstract class Command {
     this.options = rest;
   }
 
-  public abstract didDispatch(message: Discord.Message, args: (string | number | boolean)[]): void;
+  public abstract didDispatch(
+    message: Discord.Message,
+    args: (string | number | boolean)[],
+  ): void | boolean;
 
   public didCatchValidationError(message: Discord.Message, errs: ValidationError[]) {
+    console.log(errs);
     errs.forEach(err => {
       message.channel.send(err.message);
     });
   }
 
-  public shouldCommandDispatch?(message: Discord.Message): boolean;
-  public willDispatch?(message: Discord.Message): void;
-  public didSuccessfullyDispatch?(message: Discord.Message): void;
+  public willDispatch?(message: Discord.Message): void | boolean;
+  public didSuccessfulDispatch?(message: Discord.Message): void;
   public didFailedDispatch?(message: Discord.Message): void;
-  public didLoad?(): void;
 }

@@ -1,12 +1,12 @@
 import Discord from 'discord.js';
-import Command from './structures/Command';
-import Task from './structures/Task';
-import ValidationError from './structures/ValidationError';
+import Command from './structures/resource/Command';
+import Task from './structures/resource/Task';
+import BaseValidator from './structures/validator/BaseValidator';
+import ValidationError from './structures/validator/ValidationError';
 
 export interface Constructor<T> {
   new (...args: any[]): T;
 }
-
 export type Resource = Command & Task;
 
 export interface ResourceInfo {
@@ -22,10 +22,14 @@ export interface ClientOptions extends Discord.ClientOptions {
   typing?: boolean;
   prefix?: string;
 }
-
 export interface FolderName {
   commands: string;
   tasks: string;
+}
+
+export interface ValidatorOptions {
+  abortEarly: boolean;
+  coerce: boolean;
 }
 
 export interface AddonOptions {
@@ -34,28 +38,40 @@ export interface AddonOptions {
   folderName?: FolderName;
   createFoldersIfNotExisted?: boolean;
   ignoreGroupFolderName?: string;
+  validator?: Partial<ValidatorOptions>;
 }
 
-export type ValidationResults<T extends number | boolean | string = number | boolean | string> = [
+export type ValidationMethod = (value: string, ...args: any[]) => boolean;
+
+export type ValidationResults = [
   ValidationError[] | null,
-  T | null,
+  string | number | boolean | undefined | null,
 ];
 
-export type ValidatorFunc = (value: string) => ValidationResults;
+export interface ValidationRule {
+  method: ValidationMethod;
+  args?: Record<string, any>;
+  validWhen?: boolean;
+}
+
+export interface ValidationFlags {
+  required?: boolean;
+}
+
+export interface Schema {
+  type: string;
+  flags: ValidationFlags;
+  rules: ValidationRule[];
+}
 
 export interface CommandOptions {
   name: string;
   alias?: string[];
-  schema?: ValidatorFunc[];
+  schema?: BaseValidator[];
 }
 
 export interface TaskOptions {
   name: string;
-}
-
-export interface ValidatorOptions {
-  abortEarly?: boolean;
-  coerce?: boolean;
 }
 
 export type CommandComponents = [string, string, string[]];

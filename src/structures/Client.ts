@@ -1,6 +1,7 @@
 import Discord from 'discord.js';
 import merge from 'lodash/merge';
 import isPlainObject from 'lodash/isPlainObject';
+import isFunction from 'lodash/isFunction';
 import Addon from './Addon';
 import Debugger from './Debugger';
 import { Constructor, ClientOptions } from '../types';
@@ -17,7 +18,7 @@ export default class NebulaClient extends Discord.Client {
   // Discord client's options are public
   public readonly options: ClientOptions & typeof defaultOptions;
 
-  public constructor(options: ClientOptions = {}) {
+  constructor(options: ClientOptions = {}) {
     if (!isPlainObject(options)) throw new TypeError('clientOptions must be an object');
 
     const mergedOptions = merge(defaultOptions, options);
@@ -26,18 +27,15 @@ export default class NebulaClient extends Discord.Client {
 
     this.options = mergedOptions;
     this.on('ready', () => {
-      if (this.options.debug) Debugger.info('Client didReady', 'Lifecycle');
-      if (this.didReady) this.didReady();
+      this.callLifecycle('didReady');
 
       addons.forEach(addon => {
         addon.loadResources();
 
-        if (this.options.debug) Debugger.info(`${addon.name} didReady`, 'Lifecycle');
-        if (addon.didReady) addon.didReady();
+        this.callLifecycle('didReady', addon);
       });
     }).on('message', (message: Discord.Message) => {
-      if (this.options.debug) Debugger.info('Client message', 'Lifecycle');
-      if (this.didMessage) this.didMessage(message);
+      this.callLifecycle('didMessage');
 
       addons.forEach(addon => {
         addon.dispatch(message);
@@ -53,10 +51,16 @@ export default class NebulaClient extends Discord.Client {
 
     addons.push(addon);
 
-    if (this.options.debug) Debugger.info(`${addon.name} load`, 'Lifecycle');
-    if (addon.didLoad) addon.didLoad();
-
     return this;
+  }
+
+  public callLifecycle(name: string, structure: any = this, ...args: any[]) {
+    if (this.options.debug) Debugger.info(`${structure.constructor.name} ${name}`, 'Lifecycle');
+    if (structure[name]) {
+      if (!isFunction(structure[name])) throw new TypeError('Lifecycle must be a function');
+
+      return structure[name](...args);
+    }
   }
 
   protected didReady?(): void;
