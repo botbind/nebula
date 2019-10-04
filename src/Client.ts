@@ -91,7 +91,7 @@ export default class NebulaClient extends Discord.Client {
    * Load and start an addon
    * @param Addon - The addon to load
    */
-  load(Addon: Constructor<Addon>) {
+  protected load(Addon: Constructor<Addon>) {
     if (Addon.prototype instanceof Addon)
       throw new TypeError('addon must inherit of the Addon class');
 
