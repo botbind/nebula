@@ -27,6 +27,7 @@ module.exports = {
     'no-alert': 'error',
     'no-constant-condition': 'error',
 
+    'class-methods-use-this': 'off',
     'no-restricted-syntax': 'off',
     'no-param-reassign': 'off',
     'no-prototype-builtins': 'off',

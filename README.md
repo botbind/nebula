@@ -141,7 +141,7 @@ module.exports = class SayHi extends Command {
     });
   }
 
-  public async didDispatch(message: Discord.Message, [name]: string[]) {
+  async didDispatch(message: Discord.Message, [name]: string[]) {
     message.channel.send(`Hi, ${name}`);
   }
 };

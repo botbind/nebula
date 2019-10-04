@@ -1,36 +1,65 @@
-import Client from './structures/Client';
-import Addon from './structures/Addon';
-import Debugger from './structures/Debugger';
-import Command from './structures/resource/Command';
-import Validator from './structures/validator/Validator';
-import ValidationError from './structures/validator/ValidationError';
-import {
-  ClientOptions,
+import Client, { ClientOptions } from './Client';
+import Addon, {
   AddonOptions,
+  Resource,
   ResourceInfo,
   ResourceList,
-  Resource,
-  LogTypes,
-  FolderName,
-  ValidatorOptions,
+  FolderNames,
+  CommandComponents,
+} from './Addon';
+import Command, { CommandOptions } from './Command';
+import Task, { TaskOptions } from './Task';
+import Validator, {
+  CommandArgTypes,
+  ValidatorTypes,
   Schema,
-} from './types';
+  ValueStoreEntry,
+  ValueStore,
+  ValidationRule,
+  ValidationResultStore,
+  ValidationResults,
+  ValidationFlags,
+  ValidatorOptions,
+} from './Validator';
+import BaseValidator from './Validator/BaseValidator';
+import BooleanValidator from './Validator/BooleanValidator';
+import NumberValidator from './Validator/NumberValidator';
+import StringValidator from './Validator/StringValidator';
+import ValidationError from './Validator/ValidationError';
+import Debugger, { LogTypes } from './Debugger';
+import Util from './Util';
 
-export default Client;
 export {
   Client,
   ClientOptions,
-  Command,
   Addon,
   AddonOptions,
+  Resource,
   ResourceInfo,
   ResourceList,
-  Resource,
-  LogTypes,
-  FolderName,
-  Debugger,
-  ValidatorOptions,
+  FolderNames,
+  CommandComponents,
+  Command,
+  CommandOptions,
+  Task,
+  TaskOptions,
   Validator,
-  ValidationError,
+  CommandArgTypes,
+  ValidatorTypes,
   Schema,
+  ValueStoreEntry,
+  ValueStore,
+  ValidationRule,
+  ValidationResultStore,
+  ValidationResults,
+  ValidationFlags,
+  ValidatorOptions,
+  BaseValidator,
+  BooleanValidator,
+  NumberValidator,
+  StringValidator,
+  ValidationError,
+  Debugger,
+  LogTypes,
+  Util,
 };

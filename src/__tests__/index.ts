@@ -1,25 +1,18 @@
 import 'dotenv/config';
-import { Client, Addon } from '..';
+import TestAddon from './addon';
+import { Client } from '..';
 
 class TestClient extends Client {
-  ready() {
-    this.user.setActivity("Hello, I'm ready");
+  didReady() {
+    this.load(TestAddon);
+    this.user.setActivity("I'm ready!");
+  }
+
+  didCatchError(err: Error) {
+    console.error(err);
   }
 }
 
-class TestAddon extends Addon {
-  constructor(client: Client) {
-    super(client, {
-      name: 'test-addon',
-      baseDir: __dirname,
-      folderName: {
-        commands: 'command',
-        tasks: 'scheduledTasks',
-      },
-    });
-  }
-}
+const client = new TestClient({ debug: true, typing: true });
 
-const client = new TestClient({ debug: true });
-
-client.load(TestAddon).login(process.env.DISCORD_TOKEN);
+client.login(process.env.DISCORD_TOKEN);
