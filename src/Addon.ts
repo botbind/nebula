@@ -155,12 +155,6 @@ export default abstract class Addon {
     });
   }
 
-  /**
-   * Import a resource
-   * @param path - The path of the resource
-   * @param category - The category of the resource
-   * @param group - The group of the resource
-   */
   private importResource(path: string, category: string, group: string) {
     if (fs.lstatSync(path).isFile() && (path.endsWith('.js') || path.endsWith('.ts'))) {
       const resourceReq = require(path);
@@ -180,7 +174,7 @@ export default abstract class Addon {
   }
 
   /**
-   * Dispatch commands based on messages. It's not recommended to override this method unless you know what you're doing
+   * Dispatch commands based on messages.
    * @param message - The created message
    */
   public async dispatch(message: Discord.Message, commandComponents: CommandComponents) {
