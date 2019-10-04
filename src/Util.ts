@@ -28,6 +28,16 @@ class Util {
   static isArray(maybeArray: any) {
     return Array.isArray(maybeArray);
   }
+
+  /**
+   * Check whether a value is a number
+   * @param maybeNumber The value to check
+   */
+  static isNumber(maybeNumber: any) {
+    const coerce = Number(maybeNumber);
+
+    return !Number.isNaN(coerce);
+  }
 }
 
 export default Util;

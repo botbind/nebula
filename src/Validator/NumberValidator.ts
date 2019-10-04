@@ -1,4 +1,5 @@
 import BaseValidator from './BaseValidator';
+import Util from '../Util';
 
 type CompareDirections = 'greater' | 'smaller' | 'equal' | 'greaterOrEqual' | 'smallerOrEqual';
 
@@ -13,9 +14,7 @@ export default class NumberValidator extends BaseValidator<number> {
   }
 
   coerce(value: any) {
-    const coerced = Number(value);
-
-    if (!Number.isNaN(coerced)) return coerced;
+    if (Util.isNumber(value)) return Number(value);
 
     return null;
   }
@@ -41,8 +40,8 @@ export default class NumberValidator extends BaseValidator<number> {
    * @param max The max value
    */
   range(min?: number, max?: number) {
-    if (!this.coerce(min)) throw new TypeError('min must be a number');
-    if (!this.coerce(max)) throw new TypeError('max must be a number');
+    if (!Util.isNumber(min)) throw new TypeError('min must be a number');
+    if (!Util.isNumber(max)) throw new TypeError('max must be a number');
 
     this.rules.push((value, rawValue, key) => {
       if ((!min || value >= min) && (!max || value <= max)) return true;
@@ -60,7 +59,7 @@ export default class NumberValidator extends BaseValidator<number> {
    * @param number The number to check against
    */
   multiple(number: number) {
-    if (!this.coerce(number)) throw new TypeError('number must be a number');
+    if (!Util.isNumber(number)) throw new TypeError('number must be a number');
 
     this.rules.push((value, rawValue, key) => {
       if (value % number === 0) return true;
@@ -78,7 +77,7 @@ export default class NumberValidator extends BaseValidator<number> {
    * @param number The number to check against
    */
   divide(number: number) {
-    if (!this.coerce(number)) throw new TypeError('number must be a number');
+    if (!Util.isNumber(number)) throw new TypeError('number must be a number');
 
     this.rules.push((value, rawValue, key) => {
       if (number % value === 0) return true;
