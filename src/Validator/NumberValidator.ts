@@ -114,11 +114,24 @@ export default class NumberValidator extends BaseValidator<number> {
 
       let condition = false;
 
-      if (direction === 'greater') condition = value > value2;
-      if (direction === 'smaller') condition = value < value2;
-      if (direction === 'equal') condition = value === value2;
-      if (direction === 'greaterOrEqual') condition = value >= value2;
-      if (direction === 'smallerOrEqual') condition = value <= value2;
+      switch (direction) {
+        case 'greater':
+          condition = value > value2;
+          break;
+        case 'smaller':
+          condition = value < value2;
+          break;
+        case 'equal':
+          condition = value === value2;
+          break;
+        case 'greaterOrEqual':
+          condition = value >= value2;
+          break;
+        case 'smallerOrEqual':
+          condition = value <= value2;
+          break;
+        default:
+      }
 
       if (condition) return true;
 
