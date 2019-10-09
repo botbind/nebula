@@ -55,11 +55,6 @@ export interface CommandOptions {
   limit?: LimitOptions;
 
   /**
-   * Whether the response should be deleted when the triggering command is deleted
-   */
-  deletable?: boolean;
-
-  /**
    * Whether the command is NSFW
    */
   nsfw?: boolean;
