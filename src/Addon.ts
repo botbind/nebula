@@ -228,14 +228,13 @@ export default abstract class Addon {
           throw new TypeError('schema must be an object with validators');
 
         const results = Validator.validate(
+          message,
           commandArgs,
           resource.options.schema,
           this.options.validator,
         );
 
-        const errors = Object.entries(results).filter(
-          ([, result]) => result instanceof ValidationError,
-        );
+        const errors = Object.entries(results).filter(([, results]) => Util.isArray(results));
 
         if (errors.length) {
           resource.didCatchValidationErrors(

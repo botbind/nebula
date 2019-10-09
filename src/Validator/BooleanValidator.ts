@@ -22,7 +22,7 @@ export default class BooleanValidator extends BaseValidator<boolean> {
    * Check if a value is truthy
    */
   truthy() {
-    this.rules.push((value, rawValue, key) => {
+    this.rules.push(({ value, rawValue, key }) => {
       if (value) return true;
 
       this.addError(rawValue, key, 'boolean.truthy');
@@ -37,7 +37,7 @@ export default class BooleanValidator extends BaseValidator<boolean> {
    * Check if a value is falsy
    */
   falsy() {
-    this.rules.push((value, rawValue, key) => {
+    this.rules.push(({ value, rawValue, key }) => {
       if (!value) return true;
 
       this.addError(rawValue, key, 'boolean.falsy');

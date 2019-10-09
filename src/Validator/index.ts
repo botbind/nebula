@@ -1,3 +1,4 @@
+import Discord from 'discord.js';
 import BooleanValidator from './BooleanValidator';
 import NumberValidator from './NumberValidator';
 import StringValidator from './StringValidator';
@@ -32,29 +33,38 @@ export interface ValueStoreEntry {
  */
 export type ValueStore = Record<string, ValueStoreEntry>;
 
-/**
- * The validation rule
- */
-export type ValidationRule<T extends CommandArgTypes = CommandArgTypes> = (
+export interface ValidationRuleArguments<T extends CommandArgTypes> {
   /**
    * The coerced value to validate
    */
-  value: T,
+  value: T;
 
   /**
    * The raw value before coercing
    */
-  rawValue: string,
+  rawValue: string;
 
   /**
    * The key of the value in the value store
    */
-  key: string,
+  key: string;
 
   /**
    * The function that returns a value store entry based on a ref key
    */
-  ref: (key: string) => ValueStoreEntry,
+  ref: (key: string) => ValueStoreEntry;
+
+  /**
+   * The created message
+   */
+  message: Discord.Message;
+}
+
+/**
+ * The validation rule
+ */
+export type ValidationRule<T extends CommandArgTypes = CommandArgTypes> = (
+  arg: ValidationRuleArguments<T>,
 ) => boolean;
 
 /**
@@ -90,11 +100,17 @@ export interface ValidatorOptions {
 export default class Validator {
   /**
    * Validate an array of values against a validation schema
+   * @param message The created message
    * @param values The values to validate
    * @param schema The validation schema
    * @param options The options of the validator
    */
-  static validate(values: string[], schema: Schema, options: ValidatorOptions): ValidationResults {
+  static validate(
+    message: Discord.Message,
+    values: string[],
+    schema: Schema,
+    options: ValidatorOptions,
+  ): ValidationResults {
     const valueStore: ValueStore = {};
     const validatorEntries = Object.entries(schema);
 
@@ -140,12 +156,13 @@ export default class Validator {
       currValidator.errs.length = 0;
 
       for (const rule of currValidator.rules) {
-        const result = (rule as ValidationRule)(
+        const result = (rule as ValidationRule)({
           value,
-          currRawValue,
-          currKey,
-          (ref: string) => valueStore[ref],
-        );
+          rawValue: currRawValue,
+          key: currKey,
+          ref: (refKey: string) => valueStore[refKey],
+          message,
+        });
 
         if (!result && options.abortEarly)
           return {

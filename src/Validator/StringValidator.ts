@@ -20,7 +20,7 @@ export default class StringValidator extends BaseValidator<string> {
   length(size: number) {
     if (!Util.isNumber(size)) throw new TypeError('size must be a number');
 
-    this.addRule((value, rawValue, key) => {
+    this.addRule(({ value, rawValue, key }) => {
       if (value.length === size) return true;
 
       this.addError(rawValue, key, 'string.length');
@@ -38,7 +38,7 @@ export default class StringValidator extends BaseValidator<string> {
   min(size: number) {
     if (!Util.isNumber(size)) throw new TypeError('size must be a number');
 
-    this.addRule((value, rawValue, key) => {
+    this.addRule(({ value, rawValue, key }) => {
       if (value.length >= size) return true;
 
       this.addError(rawValue, key, 'string.min');
@@ -56,7 +56,7 @@ export default class StringValidator extends BaseValidator<string> {
   max(size: number) {
     if (!Util.isNumber(size)) throw new TypeError('size must be a number');
 
-    this.addRule((value, rawValue, key) => {
+    this.addRule(({ value, rawValue, key }) => {
       if (value.length <= size) return true;
 
       this.addError(rawValue, key, 'string.max');
@@ -125,7 +125,7 @@ export default class StringValidator extends BaseValidator<string> {
   }
 
   private _testRegex(regex: RegExp, type: string) {
-    this.addRule((value, rawValue, key) => {
+    this.addRule(({ value, rawValue, key }) => {
       if (regex.test(value)) return true;
 
       this.addError(rawValue, key, type);

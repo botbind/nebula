@@ -23,7 +23,7 @@ export default class NumberValidator extends BaseValidator<number> {
    * Check if a value is an integer
    */
   integer() {
-    this.rules.push((value, rawValue, key) => {
+    this.rules.push(({ value, rawValue, key }) => {
       if (Number.isInteger(value)) return true;
 
       this.addError(rawValue, key, 'number.integer');
@@ -43,7 +43,7 @@ export default class NumberValidator extends BaseValidator<number> {
     if (!Util.isNumber(min)) throw new TypeError('min must be a number');
     if (!Util.isNumber(max)) throw new TypeError('max must be a number');
 
-    this.rules.push((value, rawValue, key) => {
+    this.rules.push(({ value, rawValue, key }) => {
       if ((!min || value >= min) && (!max || value <= max)) return true;
 
       this.addError(rawValue, key, 'number.range');
@@ -61,7 +61,7 @@ export default class NumberValidator extends BaseValidator<number> {
   multiple(number: number) {
     if (!Util.isNumber(number)) throw new TypeError('number must be a number');
 
-    this.rules.push((value, rawValue, key) => {
+    this.rules.push(({ value, rawValue, key }) => {
       if (value % number === 0) return true;
 
       this.addError(rawValue, key, 'number.multiple');
@@ -79,7 +79,7 @@ export default class NumberValidator extends BaseValidator<number> {
   divide(number: number) {
     if (!Util.isNumber(number)) throw new TypeError('number must be a number');
 
-    this.rules.push((value, rawValue, key) => {
+    this.rules.push(({ value, rawValue, key }) => {
       if (number % value === 0) return true;
 
       this.addError(rawValue, key, 'number.divide');
@@ -99,7 +99,7 @@ export default class NumberValidator extends BaseValidator<number> {
     if (!compareDirections.includes(direction))
       throw new TypeError('direction must be greater, smaller or equal');
 
-    this.rules.push((value, rawValue, key, ref) => {
+    this.rules.push(({ value, rawValue, key, ref }) => {
       const entry = ref(refKey);
 
       if (!entry) throw new TypeError(`refKey "${refKey}" not found`);
