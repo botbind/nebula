@@ -74,7 +74,13 @@ export default class StringValidator extends BaseValidator<string> {
   test(regex: RegExp) {
     if (!(regex instanceof RegExp)) throw new TypeError('regex must be a RegExp');
 
-    this._testRegex(regex, 'string.test');
+    this.addRule(({ value, rawValue, key }) => {
+      if (regex.test(value)) return true;
+
+      this.addError(rawValue, key, 'string.test');
+
+      return false;
+    });
 
     return this;
   }
@@ -83,7 +89,7 @@ export default class StringValidator extends BaseValidator<string> {
    * Check if a value is a user mention
    */
   user() {
-    this._testRegex(/^(?:<@!?)?(\d{17,19})>?$/, 'string.user');
+    this._testDiscordStrings('user');
 
     return this;
   }
@@ -92,7 +98,7 @@ export default class StringValidator extends BaseValidator<string> {
    * Check if a value is a channel mention
    */
   channel() {
-    this._testRegex(/^(?:<#)?(\d{17,19})>?$/, 'string.channel');
+    this._testDiscordStrings('channel');
 
     return this;
   }
@@ -101,7 +107,7 @@ export default class StringValidator extends BaseValidator<string> {
    * Check if a value is an emoji mention
    */
   emoji() {
-    this._testRegex(/^(?:<a?:\w{2,32}:)?(\d{17,19})>?$/, 'string.emoji');
+    this._testDiscordStrings('emoji');
 
     return this;
   }
@@ -110,7 +116,7 @@ export default class StringValidator extends BaseValidator<string> {
    * Check if a value is a role mention
    */
   role() {
-    this._testRegex(/^(?:<@&)?(\d{17,19})>?$/, 'string.role');
+    this._testDiscordStrings('role');
 
     return this;
   }
@@ -119,16 +125,53 @@ export default class StringValidator extends BaseValidator<string> {
    * Check if a value is a discord snowflake
    */
   snowflake() {
-    this._testRegex(/^(\d{17,19})$/, 'string.snowflake');
+    this._testDiscordStrings('snowflake');
 
     return this;
   }
 
-  private _testRegex(regex: RegExp, type: string) {
-    this.addRule(({ value, rawValue, key }) => {
-      if (regex.test(value)) return true;
+  private _testDiscordStrings(type: string) {
+    this.addRule(({ value, rawValue, key, message }) => {
+      const enhancedType = `string.${type}`;
+      let regex;
+      let collection;
 
-      this.addError(rawValue, key, type);
+      switch (type) {
+        case 'user':
+          regex = /^(?:<@!?)?(\d{17,19})>?$/;
+          collection = message.guild.members;
+          break;
+        case 'channel':
+          regex = /^(?:<#)?(\d{17,19})>?$/;
+          collection = message.guild.channels;
+          break;
+        case 'emoji':
+          regex = /^(?:<a?:\w{2,32}:)?(\d{17,19})>?$/;
+          collection = message.guild.emojis;
+          break;
+        case 'role':
+          regex = /^(?:<@&)?(\d{17,19})>?$/;
+          collection = message.guild.roles;
+          break;
+        case 'snowflake':
+          regex = /^(\d{17,19})$/;
+          collection = null;
+          break;
+        default:
+          return false;
+      }
+
+      const matches = value.match(regex);
+
+      if (!matches) {
+        this.addError(rawValue, key, enhancedType);
+
+        return false;
+      }
+
+      if (!collection || collection.has(matches[1])) return true;
+
+      this.addError(rawValue, key, enhancedType);
 
       return false;
     });

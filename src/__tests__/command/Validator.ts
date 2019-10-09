@@ -6,10 +6,8 @@ export default class ValidatorCommand extends Command {
     super(client, {
       name: 'v',
       schema: {
-        num1: Validator.number().require(),
-        num2: Validator.number()
-          .integer()
-          .compare('num1', 'greaterOrEqual')
+        mention: Validator.string()
+          .user()
           .require(),
       },
     });
@@ -19,7 +17,7 @@ export default class ValidatorCommand extends Command {
     message.channel.send('Test suites for Validator');
   }
 
-  async didDispatch(message: Discord.Message, { num1, num2 }: ValidationResults) {
-    message.channel.send(`${num1} < ${num2} enit?`);
+  async didDispatch(message: Discord.Message, { mention }: ValidationResults) {
+    message.channel.send(`Mention: ${mention}`);
   }
 }
