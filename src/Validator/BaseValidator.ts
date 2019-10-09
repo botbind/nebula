@@ -43,16 +43,34 @@ export default abstract class BaseValidator<T extends CommandArgTypes> {
   }
 
   /**
-   * Check if a value is valid from a list of values
-   * @param values The valid values
+   * Check if a value is in a list of values
+   * @param values The list of values
    */
-  valid(...values: CommandArgTypes[]) {
+  in(...values: CommandArgTypes[]) {
     if (!values.length) throw new TypeError('values must have at least 1 value');
 
     this.addRule(({ value, rawValue, key }) => {
       if (values.includes(value)) return true;
 
-      this.addError(rawValue, key, `${this.type}.valid`);
+      this.addError(rawValue, key, `${this.type}.in`);
+
+      return false;
+    });
+
+    return this;
+  }
+
+  /**
+   * Check if a value is not in a list of values
+   * @param values The list of values
+   */
+  notIn(...values: CommandArgTypes[]) {
+    if (!values.length) throw new TypeError('values must have at least 1 value');
+
+    this.addRule(({ value, rawValue, key }) => {
+      if (!values.includes(value)) return true;
+
+      this.addError(rawValue, key, `${this.type}.notIn`);
 
       return false;
     });
