@@ -60,12 +60,7 @@ export type ValidationRule<T extends CommandArgTypes = CommandArgTypes> = (
 /**
  * The validated value store
  */
-export type ValidationResultStore = Record<string, ValidationError[] | CommandArgTypes | null>;
-
-/**
- * The overall validation results
- */
-export type ValidationResults = [boolean, ValidationResultStore];
+export type ValidationResults = Record<string, ValidationError[] | CommandArgTypes | null>;
 
 /**
  * The validation flags
@@ -110,30 +105,21 @@ export default class Validator {
 
       if (currValue === undefined) {
         if (currValidator.flags.required)
-          return [
-            true,
-            {
-              [currKey]: err,
-            },
-          ];
+          return {
+            [currKey]: err,
+          };
 
-        return [
-          false,
-          {
-            [currKey]: null,
-          },
-        ];
+        return {
+          [currKey]: null,
+        };
       }
 
       const coerced = currValidator.coerce(currValue);
 
       if (coerced === null)
-        return [
-          true,
-          {
-            [currKey]: err,
-          },
-        ];
+        return {
+          [currKey]: err,
+        };
 
       valueStore[currKey] = {
         value: coerced,
@@ -143,7 +129,7 @@ export default class Validator {
     }
 
     let hasErrors = false;
-    const results: ValidationResultStore = {};
+    const results: ValidationResults = {};
 
     for (let i = 0; i < validatorEntries.length; i++) {
       const [currKey, currValidator] = validatorEntries[i];
@@ -162,12 +148,9 @@ export default class Validator {
         );
 
         if (!result && options.abortEarly)
-          return [
-            true,
-            {
-              [currKey]: currValidator.errs,
-            },
-          ];
+          return {
+            [currKey]: currValidator.errs,
+          };
       }
 
       if (currValidator.errs.length) {
@@ -178,7 +161,7 @@ export default class Validator {
       }
     }
 
-    return [hasErrors, results];
+    return results;
   }
 
   static boolean() {

@@ -6,7 +6,8 @@ import Client from './Client';
 import Util from './Util';
 import Command from './Command';
 import Task from './Task';
-import Validator, { ValidatorOptions } from './Validator';
+import Validator, { ValidatorOptions, ValidationResults } from './Validator';
+import ValidationError from './Validator/ValidationError';
 import { Constructor } from './types';
 
 export interface FolderNames {
@@ -109,9 +110,16 @@ export default abstract class Addon {
   didReady?(): void;
 
   /**
+   * Invoked when the command name doesn't resolve to any commands
+   */
+  didResolveCommandsUnsuccessfully(message: Discord.Message, name: string) {
+    message.channel.send(`Cannot find command "${name}" from ${this.name}`);
+  }
+
+  /**
    * The main hub for creating addons
-   * @param client - The client of the addon
-   * @param options - The options of the addon
+   * @param client The client of the addon
+   * @param options The options of the addon
    */
   constructor(client: Client, options: AddonOptions) {
     if (!Util.isObject(options)) throw new TypeError('addonOptions must be an object');
@@ -144,18 +152,18 @@ export default abstract class Addon {
           fs.readdirSync(groupPath).forEach(resourceName => {
             const resourcePath = path.resolve(groupPath, resourceName);
 
-            this.importResource(resourcePath, category, actualGroupName);
+            this._importResource(resourcePath, category, actualGroupName);
           });
 
           return;
         }
 
-        this.importResource(groupPath, category, 'nebula-ignore');
+        this._importResource(groupPath, category, 'nebula-ignore');
       });
     });
   }
 
-  private importResource(path: string, category: string, group: string) {
+  private _importResource(path: string, category: string, group: string) {
     if (fs.lstatSync(path).isFile() && (path.endsWith('.js') || path.endsWith('.ts'))) {
       const resourceReq = require(path);
 
@@ -175,23 +183,43 @@ export default abstract class Addon {
 
   /**
    * Dispatch commands based on messages.
-   * @param message - The created message
+   * @param message The created message
    */
-  public async dispatch(message: Discord.Message, commandComponents: CommandComponents) {
+  async dispatch(message: Discord.Message, commandComponents: CommandComponents) {
     const [, commandName, commandArgs] = commandComponents;
 
-    // We allow multiple commands to be run at the same time
+    // We allow multiple commands to be ran at the same time
     const commands = this.resources.filter(
       ({ category, resource }) =>
         category === 'commands' &&
-        (resource.name === commandName || resource.options.alias.includes(commandName)),
+        (resource.name === commandName || resource.alias.includes(commandName)),
     );
 
-    for (const { resource } of commands) {
-      let shouldDispatch;
-      if (resource.willDispatch) shouldDispatch = await resource.willDispatch(message);
+    if (!commands.length) {
+      if (this.didResolveCommandsUnsuccessfully)
+        this.didResolveCommandsUnsuccessfully(message, commandName);
 
-      if (shouldDispatch !== undefined && !shouldDispatch) continue;
+      return;
+    }
+
+    for (const { resource } of commands) {
+      let willDispatch;
+
+      if (resource.willDispatch) willDispatch = await resource.willDispatch(message);
+
+      if (willDispatch !== undefined && !willDispatch) continue;
+
+      if (resource.shouldCooldown(message)) {
+        resource.didCooldown(message);
+
+        continue;
+      }
+
+      if (resource.shouldInhibitNSFW(message)) {
+        resource.didInhibitNSFW(message);
+
+        continue;
+      }
 
       let validatedArgs;
 
@@ -199,14 +227,28 @@ export default abstract class Addon {
         if (!Util.isObject(resource.options.schema))
           throw new TypeError('schema must be an object with validators');
 
-        const [hasErrors, results] = Validator.validate(
+        const results = Validator.validate(
           commandArgs,
           resource.options.schema,
           this.options.validator,
         );
 
-        if (hasErrors) {
-          resource.didCatchValidationErrors(message, results);
+        const errors = Object.entries(results).filter(
+          ([, result]) => result instanceof ValidationError,
+        );
+
+        if (errors.length) {
+          resource.didCatchValidationErrors(
+            message,
+            errors.reduce(
+              (res, [key, result]) => {
+                res[key] = result;
+
+                return res;
+              },
+              {} as ValidationResults,
+            ),
+          );
 
           continue;
         }
@@ -214,23 +256,23 @@ export default abstract class Addon {
         validatedArgs = results;
       }
 
-      if (!resource.didDispatch) return;
+      if (!resource.didDispatch) continue;
 
       const isSuccessfullyDispatched = await resource.didDispatch(message, validatedArgs);
 
       if (isSuccessfullyDispatched !== undefined && !isSuccessfullyDispatched) {
-        if (resource.didFailedDispatch) resource.didFailedDispatch(message);
+        if (resource.didDispatchUnsuccessfully) resource.didDispatchUnsuccessfully(message);
 
-        return;
+        continue;
       }
 
-      if (resource.didSuccessfulDispatch) resource.didSuccessfulDispatch(message);
+      if (resource.didDispatchSuccessfully) resource.didDispatchSuccessfully(message);
     }
   }
 
   /**
    * Parse a message content and return the command prefix, name and arguments
-   * @param content - The message content
+   * @param content The message content
    */
   parseCommand(content: string): CommandComponents {
     const [commandName, ...commandArgs] = content

@@ -7,7 +7,7 @@ import Addon, {
   FolderNames,
   CommandComponents,
 } from './Addon';
-import Command, { CommandOptions } from './Command';
+import Command, { CommandOptions, LimitOptions, LimitScopes } from './Command';
 import Task, { TaskOptions } from './Task';
 import Validator, {
   CommandArgTypes,
@@ -16,7 +16,6 @@ import Validator, {
   ValueStoreEntry,
   ValueStore,
   ValidationRule,
-  ValidationResultStore,
   ValidationResults,
   ValidationFlags,
   ValidatorOptions,
@@ -28,6 +27,7 @@ import StringValidator from './Validator/StringValidator';
 import ValidationError from './Validator/ValidationError';
 import Debugger, { LogTypes } from './Debugger';
 import Util from './Util';
+import { Constructor, LooseObject } from './types';
 
 export {
   Client,
@@ -41,6 +41,8 @@ export {
   CommandComponents,
   Command,
   CommandOptions,
+  LimitOptions,
+  LimitScopes,
   Task,
   TaskOptions,
   Validator,
@@ -50,7 +52,6 @@ export {
   ValueStoreEntry,
   ValueStore,
   ValidationRule,
-  ValidationResultStore,
   ValidationResults,
   ValidationFlags,
   ValidatorOptions,
@@ -62,4 +63,6 @@ export {
   Debugger,
   LogTypes,
   Util,
+  Constructor,
+  LooseObject,
 };

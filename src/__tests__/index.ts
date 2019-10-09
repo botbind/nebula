@@ -5,7 +5,7 @@ import { Client } from '..';
 class TestClient extends Client {
   didReady() {
     this.load(TestAddon);
-    this.user.setActivity("I'm ready!");
+    this.user.setActivity('Tests ready!');
   }
 
   didCatchError(err: Error) {

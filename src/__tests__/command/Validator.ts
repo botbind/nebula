@@ -1,6 +1,5 @@
 import Discord from 'discord.js';
-import { Command, Client, Validator } from '../..';
-import { ValidationResultStore } from 'src/Validator';
+import { Command, Client, Validator, ValidationResults } from '../..';
 
 export default class ValidatorCommand extends Command {
   constructor(client: Client) {
@@ -16,11 +15,11 @@ export default class ValidatorCommand extends Command {
     });
   }
 
-  public async willDispatch(message: Discord.Message) {
+  async willDispatch(message: Discord.Message) {
     message.channel.send('Test suites for Validator');
   }
 
-  public async didDispatch(message: Discord.Message, { num1, num2 }: ValidationResultStore) {
-    await message.channel.send(`${num1} < ${num2} enit?`);
+  async didDispatch(message: Discord.Message, { num1, num2 }: ValidationResults) {
+    message.channel.send(`${num1} < ${num2} enit?`);
   }
 }

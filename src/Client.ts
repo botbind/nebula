@@ -40,7 +40,7 @@ export default class NebulaClient extends Discord.Client {
 
   /**
    * Invoked when a message is created
-   * @param message - The created message
+   * @param message The created message
    */
   didMessage?(message: Discord.Message): void;
 
@@ -52,7 +52,7 @@ export default class NebulaClient extends Discord.Client {
 
   /**
    * The main hub for loading addons
-   * @param options - Options of the client
+   * @param options Options of the client
    */
   constructor(options: ClientOptions = {}) {
     if (!Util.isObject(options)) throw new TypeError('clientOptions must be an object');
@@ -89,7 +89,7 @@ export default class NebulaClient extends Discord.Client {
 
   /**
    * Load and start an addon
-   * @param Addon - The addon to load
+   * @param Addon The addon to load
    */
   protected load(Addon: Constructor<Addon>) {
     if (Addon.prototype instanceof Addon)

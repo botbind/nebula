@@ -74,7 +74,7 @@ export default class StringValidator extends BaseValidator<string> {
   test(regex: RegExp) {
     if (!(regex instanceof RegExp)) throw new TypeError('regex must be a RegExp');
 
-    this.testRegex(regex, 'string.test');
+    this._testRegex(regex, 'string.test');
 
     return this;
   }
@@ -83,7 +83,7 @@ export default class StringValidator extends BaseValidator<string> {
    * Check if a value is a user mention
    */
   user() {
-    this.testRegex(/^(?:<@!?)?(\d{17,19})>?$/, 'string.user');
+    this._testRegex(/^(?:<@!?)?(\d{17,19})>?$/, 'string.user');
 
     return this;
   }
@@ -92,7 +92,7 @@ export default class StringValidator extends BaseValidator<string> {
    * Check if a value is a channel mention
    */
   channel() {
-    this.testRegex(/^(?:<#)?(\d{17,19})>?$/, 'string.channel');
+    this._testRegex(/^(?:<#)?(\d{17,19})>?$/, 'string.channel');
 
     return this;
   }
@@ -101,7 +101,7 @@ export default class StringValidator extends BaseValidator<string> {
    * Check if a value is an emoji mention
    */
   emoji() {
-    this.testRegex(/^(?:<a?:\w{2,32}:)?(\d{17,19})>?$/, 'string.emoji');
+    this._testRegex(/^(?:<a?:\w{2,32}:)?(\d{17,19})>?$/, 'string.emoji');
 
     return this;
   }
@@ -110,7 +110,7 @@ export default class StringValidator extends BaseValidator<string> {
    * Check if a value is a role mention
    */
   role() {
-    this.testRegex(/^(?:<@&)?(\d{17,19})>?$/, 'string.role');
+    this._testRegex(/^(?:<@&)?(\d{17,19})>?$/, 'string.role');
 
     return this;
   }
@@ -119,12 +119,12 @@ export default class StringValidator extends BaseValidator<string> {
    * Check if a value is a discord snowflake
    */
   snowflake() {
-    this.testRegex(/^(\d{17,19})$/, 'string.snowflake');
+    this._testRegex(/^(\d{17,19})$/, 'string.snowflake');
 
     return this;
   }
 
-  private testRegex(regex: RegExp, type: string) {
+  private _testRegex(regex: RegExp, type: string) {
     this.addRule((value, rawValue, key) => {
       if (regex.test(value)) return true;
 
