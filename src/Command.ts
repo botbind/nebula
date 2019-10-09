@@ -16,7 +16,7 @@ export interface LimitOptions {
   /**
    * The number of times the command can be ran in a specified amount of time. Cooldown is disabled if set to 0
    */
-  limit?: number;
+  bucket?: number;
 
   /**
    * The amount of time in milliseconds that the limit applies
@@ -70,7 +70,7 @@ const defaultOptions = {
   deletable: false,
   nsfw: false,
   limit: {
-    limit: 1,
+    bucket: 1,
     scope: 'user',
   },
 };
@@ -199,7 +199,7 @@ export default abstract class Command {
    * @param message The created message
    */
   shouldCooldown(message: Discord.Message) {
-    if (!this.options.limit.time || !this.options.limit.limit) return false;
+    if (!this.options.limit.time || !this.options.limit.bucket) return false;
 
     const currTime = Date.now();
     const id = this.options.limit.scope === 'guild' ? message.guild.id : message.author.id;
@@ -212,7 +212,7 @@ export default abstract class Command {
         this.usage.set(id, [1, currTime]);
 
         return false;
-      } else if (bucket === this.options.limit.limit) return true;
+      } else if (bucket === this.options.limit.bucket) return true;
 
       this.usage.set(id, [bucket + 1, currTime]);
     } else {

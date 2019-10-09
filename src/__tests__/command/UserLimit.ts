@@ -17,7 +17,7 @@ export default class UserLimitCommand extends Command {
 
   async didDispatch(message: Discord.Message) {
     message.channel.send(
-      `You have ${this.options.limit.limit -
+      `You have ${this.options.limit.bucket -
         this.usage.get(message.author.id)![0]} time(s) left before cooling down. Scope: User`,
     );
   }
