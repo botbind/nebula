@@ -7,7 +7,6 @@ import Util from './Util';
 import Command from './Command';
 import Task from './Task';
 import Validator, { ValidatorOptions, ValidationResults } from './Validator';
-import ValidationError from './Validator/ValidationError';
 import { Constructor } from './types';
 
 export interface FolderNames {
