@@ -46,7 +46,7 @@ export default abstract class BaseValidator<T extends CommandArgTypes> {
    * Check if a value is in a list of values
    * @param values The list of values
    */
-  in(...values: CommandArgTypes[]) {
+  in(...values: T[]) {
     if (!values.length) throw new TypeError('values must have at least 1 value');
 
     this.addRule(({ value, rawValue, key }) => {
@@ -64,7 +64,7 @@ export default abstract class BaseValidator<T extends CommandArgTypes> {
    * Check if a value is not in a list of values
    * @param values The list of values
    */
-  notIn(...values: CommandArgTypes[]) {
+  notIn(...values: T[]) {
     if (!values.length) throw new TypeError('values must have at least 1 value');
 
     this.addRule(({ value, rawValue, key }) => {
