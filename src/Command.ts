@@ -213,10 +213,7 @@ export default abstract class Command {
     } else {
       this.usage.set(id, [1, currTime]);
 
-      if (!this._sweepInterval)
-        this._sweepInterval = setInterval(() => {
-          this._sweep();
-        }, 30000);
+      if (!this._sweepInterval) this._sweepInterval = setInterval(this._sweep.bind(this), 30000);
     }
 
     return false;
