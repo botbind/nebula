@@ -1,11 +1,11 @@
-export default class ValidationError extends TypeError {
-  readonly name: string;
+import NebulaError from '../NebulaError';
+
+export default class ValidationError extends NebulaError {
   readonly type: string;
 
   constructor(value: string, key: string, type: string) {
     super(`${key} of "${value}" doesn't have type of ${type}`);
 
-    this.name = 'ValidationError';
     this.type = type;
   }
 }

@@ -1,5 +1,6 @@
 import ValidationError from './ValidationError';
 import { ValidationRule, ValidationFlags, CommandArgTypes } from './';
+import NebulaError from '../NebulaError';
 
 export default abstract class BaseValidator<T extends CommandArgTypes> {
   /**
@@ -47,7 +48,7 @@ export default abstract class BaseValidator<T extends CommandArgTypes> {
    * @param values The list of values
    */
   in(...values: T[]) {
-    if (!values.length) throw new TypeError('values must have at least 1 value');
+    if (!values.length) throw new NebulaError('values must have at least 1 value');
 
     this.addRule(({ value, rawValue, key }) => {
       if (values.includes(value)) return true;
@@ -65,7 +66,7 @@ export default abstract class BaseValidator<T extends CommandArgTypes> {
    * @param values The list of values
    */
   notIn(...values: T[]) {
-    if (!values.length) throw new TypeError('values must have at least 1 value');
+    if (!values.length) throw new NebulaError('values must have at least 1 value');
 
     this.addRule(({ value, rawValue, key }) => {
       if (!values.includes(value)) return true;

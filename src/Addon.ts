@@ -6,6 +6,7 @@ import Client from './Client';
 import Util from './Util';
 import Command from './Command';
 import Task from './Task';
+import NebulaError from './NebulaError';
 import Validator, { ValidatorOptions, ValidationResults } from './Validator';
 import { Constructor } from './types';
 
@@ -121,7 +122,7 @@ export default abstract class Addon {
    * @param options The options of the addon
    */
   constructor(client: Client, options: AddonOptions) {
-    if (!Util.isObject(options)) throw new TypeError('addonOptions must be an object');
+    if (!Util.isObject(options)) throw new NebulaError('addonOptions must be an object');
 
     const { name, ...otherOptions } = merge({}, defaultOptions, options);
 
@@ -224,7 +225,7 @@ export default abstract class Addon {
 
       if (resource.options.schema) {
         if (!Util.isObject(resource.options.schema))
-          throw new TypeError('schema must be an object with validators');
+          throw new NebulaError('schema must be an object with validators');
 
         const results = Validator.validate(
           message,

@@ -9,6 +9,7 @@ import Addon, {
 } from './Addon';
 import Command, { CommandOptions, LimitOptions, LimitScopes } from './Command';
 import Task, { TaskOptions } from './Task';
+import NebulaError from './NebulaError';
 import Validator, {
   CommandArgTypes,
   ValidatorTypes,
@@ -45,6 +46,7 @@ export {
   LimitScopes,
   Task,
   TaskOptions,
+  NebulaError,
   Validator,
   CommandArgTypes,
   ValidatorTypes,

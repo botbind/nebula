@@ -1,5 +1,6 @@
 import BaseValidator from './BaseValidator';
 import Util from '../Util';
+import NebulaError from '../NebulaError';
 
 export default class StringValidator extends BaseValidator<string> {
   /**
@@ -18,7 +19,7 @@ export default class StringValidator extends BaseValidator<string> {
    * @param size The size of the value
    */
   length(size: number) {
-    if (!Util.isNumber(size)) throw new TypeError('size must be a number');
+    if (!Util.isNumber(size)) throw new NebulaError('size must be a number');
 
     this.addRule(({ value, rawValue, key }) => {
       if (value.length === size) return true;
@@ -36,7 +37,7 @@ export default class StringValidator extends BaseValidator<string> {
    * @param size The size of the value
    */
   min(size: number) {
-    if (!Util.isNumber(size)) throw new TypeError('size must be a number');
+    if (!Util.isNumber(size)) throw new NebulaError('size must be a number');
 
     this.addRule(({ value, rawValue, key }) => {
       if (value.length >= size) return true;
@@ -54,7 +55,7 @@ export default class StringValidator extends BaseValidator<string> {
    * @param size The size of the value
    */
   max(size: number) {
-    if (!Util.isNumber(size)) throw new TypeError('size must be a number');
+    if (!Util.isNumber(size)) throw new NebulaError('size must be a number');
 
     this.addRule(({ value, rawValue, key }) => {
       if (value.length <= size) return true;
@@ -72,7 +73,7 @@ export default class StringValidator extends BaseValidator<string> {
    * @param regex The regular express to check against
    */
   test(regex: RegExp) {
-    if (!(regex instanceof RegExp)) throw new TypeError('regex must be a RegExp');
+    if (!(regex instanceof RegExp)) throw new NebulaError('regex must be a RegExp');
 
     this.addRule(({ value, rawValue, key }) => {
       if (regex.test(value)) return true;

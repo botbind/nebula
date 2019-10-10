@@ -2,6 +2,7 @@ import Discord from 'discord.js';
 import merge from 'lodash.merge';
 import Util from './Util';
 import Addon from './Addon';
+import NebulaError from './NebulaError';
 import { Constructor } from './types';
 
 export interface ClientOptions extends Discord.ClientOptions {
@@ -55,7 +56,7 @@ export default class NebulaClient extends Discord.Client {
    * @param options Options of the client
    */
   constructor(options: ClientOptions = {}) {
-    if (!Util.isObject(options)) throw new TypeError('clientOptions must be an object');
+    if (!Util.isObject(options)) throw new NebulaError('clientOptions must be an object');
 
     const mergedOptions = merge({}, defaultOptions, options);
 
@@ -93,7 +94,7 @@ export default class NebulaClient extends Discord.Client {
    */
   protected load(Addon: Constructor<Addon>) {
     if (Addon.prototype instanceof Addon)
-      throw new TypeError('addon must inherit of the Addon class');
+      throw new NebulaError('addon must inherit of the Addon class');
 
     const addon = new Addon(this);
 

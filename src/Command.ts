@@ -1,6 +1,7 @@
 import Discord from 'discord.js';
 import merge from 'lodash.merge';
 import Util from './Util';
+import NebulaError from './NebulaError';
 import { Schema, ValidationResults } from './Validator';
 import ValidationError from './Validator/ValidationError';
 
@@ -174,9 +175,9 @@ export default abstract class Command {
    * @param options The options of the command
    */
   constructor(client: Discord.Client, options: CommandOptions) {
-    if (!Util.isObject(options)) throw new TypeError('commandOptions must be an object');
+    if (!Util.isObject(options)) throw new NebulaError('commandOptions must be an object');
     if (options.limit && options.limit.scope && !limitScopes.includes(options.limit.scope))
-      throw new TypeError('limitScope must be either user or guild');
+      throw new NebulaError('limitScope must be either user or guild');
 
     const { name, alias, description, ...rest } = merge({}, defaultOptions, options);
 
