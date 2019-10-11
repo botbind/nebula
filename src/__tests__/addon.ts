@@ -9,7 +9,7 @@ export default class TestAddon extends Addon {
         commands: 'command',
         tasks: 'scheduledTasks',
       },
-      validator: {
+      validatorOptions: {
         abortEarly: false,
       },
     });

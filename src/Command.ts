@@ -1,9 +1,11 @@
 import Discord from 'discord.js';
 import merge from 'lodash.merge';
+import Client from './Client';
 import Util from './Util';
 import NebulaError from './NebulaError';
 import { Schema, ValidationResults } from './Validator';
 import ValidationError from './Validator/ValidationError';
+import { Constructor, MakeOptional } from './types';
 
 /**
  * The limit scopes
@@ -30,6 +32,18 @@ export interface LimitOptions {
   scope?: LimitScopes;
 }
 
+export interface SubcommandsOptions {
+  /**
+   * Whether the default subcommand should be the first in the list
+   */
+  defaultToFirst?: boolean;
+
+  /**
+   * The list of subcomands of the command
+   */
+  commands: Constructor<Command>[];
+}
+
 export interface CommandOptions {
   /**
    * The name of the command
@@ -38,12 +52,12 @@ export interface CommandOptions {
   /**
    * The alias of the command
    */
-  alias?: string[];
+  alias: string[];
 
   /**
    * The description of the command
    */
-  description?: string;
+  description: string;
 
   /**
    * The validation schema of the command
@@ -53,31 +67,31 @@ export interface CommandOptions {
   /**
    * The usage limit for the command
    */
-  limit?: LimitOptions;
+  limit: LimitOptions;
 
   /**
    * Whether the command is NSFW
    */
-  nsfw?: boolean;
-}
+  nsfw: boolean;
 
-const defaultOptions = {
-  alias: [],
-  deletable: false,
-  nsfw: false,
-  limit: {
-    bucket: 1,
-    scope: 'user',
-  },
-};
+  /**
+   * The subcommands for the command
+   */
+  subcommands?: SubcommandsOptions;
+
+  /**
+   * Whether the command is a subcommand
+   */
+  isSubcommand: boolean;
+}
 
 const limitScopes = ['user', 'guild'];
 
-export default abstract class Command {
+export default class Command {
   /**
    * The client of the command
    */
-  protected client: Discord.Client;
+  protected client: Client;
 
   /**
    * The name of the command
@@ -97,12 +111,17 @@ export default abstract class Command {
   /**
    * The options of the command
    */
-  readonly options: Omit<CommandOptions & typeof defaultOptions, 'name' | 'description' | 'alias'>;
+  readonly options: Omit<CommandOptions, 'name' | 'description' | 'alias'>;
 
   /**
    * The usage of the command
    */
   protected usage: Discord.Collection<string, [number, number]>;
+
+  /**
+   * The instantiated subcommands of this command
+   */
+  instantiatedSubcommands?: Command[];
 
   private _sweepInterval: NodeJS.Timeout | null;
 
@@ -155,7 +174,7 @@ export default abstract class Command {
    * @param message The created message
    * @param args The user arguments
    */
-  abstract didDispatch(message: Discord.Message, args?: ValidationResults): Promise<void | boolean>;
+  didDispatch?(message: Discord.Message, args?: ValidationResults): Promise<void | boolean>;
 
   /**
    * Invoked when the command is successfully dispatched
@@ -174,20 +193,57 @@ export default abstract class Command {
    * @param client The client of the command
    * @param options The options of the command
    */
-  constructor(client: Discord.Client, options: CommandOptions) {
+  constructor(
+    client: Client,
+    options: MakeOptional<
+      CommandOptions,
+      'alias' | 'description' | 'limit' | 'nsfw' | 'isSubcommand'
+    >,
+  ) {
     if (!Util.isObject(options)) throw new NebulaError('commandOptions must be an object');
+
     if (options.limit && options.limit.scope && !limitScopes.includes(options.limit.scope))
       throw new NebulaError('limitScope must be either user or guild');
 
-    const { name, alias, description, ...rest } = merge({}, defaultOptions, options);
+    if (
+      options.subcommands &&
+      (!options.subcommands.commands || !options.subcommands.commands.length)
+    )
+      throw new NebulaError('subcommands must have at least a command');
+
+    const { name, alias, description, ...otherOptions } = merge(
+      {
+        alias: [],
+        nsfw: false,
+        limit: {
+          bucket: 1,
+          scope: 'user',
+        },
+        isSubcommand: false,
+      },
+      options,
+    );
 
     this.client = client;
     this.name = name;
     this.alias = alias;
     this.description = description;
-    this.options = rest;
+    this.options = otherOptions;
     this.usage = new Discord.Collection();
     this._sweepInterval = null;
+
+    if (this.options.subcommands)
+      this.instantiatedSubcommands = this.options.subcommands.commands.map(Subcommand => {
+        if (!(Subcommand.prototype instanceof Command))
+          throw new NebulaError('subcommands must inherit the Command class');
+
+        const subcommand = new Subcommand(this.client);
+
+        if (!subcommand.options.isSubcommand)
+          throw new NebulaError('subcommands must have isSubcommand set to true');
+
+        return new Subcommand(this.client);
+      });
   }
 
   /**

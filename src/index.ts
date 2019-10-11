@@ -7,7 +7,7 @@ import Addon, {
   FolderNames,
   CommandComponents,
 } from './Addon';
-import Command, { CommandOptions, LimitOptions, LimitScopes } from './Command';
+import Command, { CommandOptions, LimitOptions, LimitScopes, SubcommandsOptions } from './Command';
 import Task, { TaskOptions } from './Task';
 import NebulaError from './NebulaError';
 import Validator, {
@@ -28,7 +28,7 @@ import StringValidator from './Validator/StringValidator';
 import ValidationError from './Validator/ValidationError';
 import Debugger, { LogTypes } from './Debugger';
 import Util from './Util';
-import { Constructor, LooseObject } from './types';
+import { Constructor, MakeOptional } from './types';
 
 export {
   Client,
@@ -44,6 +44,7 @@ export {
   CommandOptions,
   LimitOptions,
   LimitScopes,
+  SubcommandsOptions,
   Task,
   TaskOptions,
   NebulaError,
@@ -66,5 +67,5 @@ export {
   LogTypes,
   Util,
   Constructor,
-  LooseObject,
+  MakeOptional,
 };

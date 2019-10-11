@@ -91,10 +91,6 @@ export interface ValidatorOptions {
    * Whether the validator should return coerced values
    */
   coerce: boolean;
-  /**
-   * Whether the validator should return transformed values when transforming rules are ran
-   */
-  transform: boolean;
 }
 
 export default class Validator {

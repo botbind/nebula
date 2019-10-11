@@ -8,7 +8,7 @@ import Command from './Command';
 import Task from './Task';
 import NebulaError from './NebulaError';
 import Validator, { ValidatorOptions, ValidationResults } from './Validator';
-import { Constructor } from './types';
+import { Constructor, MakeOptional } from './types';
 
 export interface FolderNames {
   /**
@@ -26,26 +26,31 @@ export interface AddonOptions {
    * The name of the addon
    */
   name: string;
+
   /**
    * The base directory of the addon
    */
   baseDir: string;
+
   /**
    * The folder names mapping
    */
-  folderNames?: FolderNames;
+  folderNames: FolderNames;
+
   /**
    * Whether resource folders should be created if not exist
    */
-  createFoldersIfNotExisted?: boolean;
+  createFoldersIfNotExisted: boolean;
+
   /**
    * The folder whose name shouldn't be used as the group name
    */
-  ignoreGroupFolderName?: string;
+  ignoreGroupFolderName: string;
+
   /**
    * The options of the validator
    */
-  validator?: Partial<ValidatorOptions>;
+  validatorOptions: Partial<ValidatorOptions>;
 }
 
 /**
@@ -72,33 +77,22 @@ export type ResourceList = ResourceInfo[];
  */
 export type CommandComponents = [string, string, string[]];
 
-const defaultOptions = {
-  folderNames: {
-    commands: 'commands',
-    tasks: 'tasks',
-  },
-  createFoldersIfNotExisted: true,
-  ignoreGroupFolderName: 'ignore',
-  validator: {
-    coerce: true,
-    abortEarly: true,
-    transform: true,
-  },
-};
-
 export default abstract class Addon {
   /**
    * The client of the addon
    */
   protected client: Client;
+
   /**
    * The name of the addon
    */
   readonly name: string;
+
   /**
    * The options of the addon
    */
-  readonly options: Omit<AddonOptions, 'name'> & typeof defaultOptions;
+  readonly options: Omit<AddonOptions, 'name'>;
+
   /**
    * The loaded resources of the addon
    */
@@ -112,8 +106,10 @@ export default abstract class Addon {
   /**
    * Invoked when the command name doesn't resolve to any commands
    */
-  didResolveCommandsUnsuccessfully(message: Discord.Message, name: string) {
-    message.channel.send(`Cannot find command "${name}" from ${this.name}`);
+  didResolveCommandsUnsuccessfully(message: Discord.Message, name: string, parent?: string) {
+    message.channel.send(
+      `Cannot find command "${name}" from ${this.name} ${parent ? `of parent ${parent}` : ''}`,
+    );
   }
 
   /**
@@ -121,10 +117,30 @@ export default abstract class Addon {
    * @param client The client of the addon
    * @param options The options of the addon
    */
-  constructor(client: Client, options: AddonOptions) {
+  constructor(
+    client: Client,
+    options: MakeOptional<
+      AddonOptions,
+      'folderNames' | 'createFoldersIfNotExisted' | 'ignoreGroupFolderName' | 'validatorOptions'
+    >,
+  ) {
     if (!Util.isObject(options)) throw new NebulaError('addonOptions must be an object');
 
-    const { name, ...otherOptions } = merge({}, defaultOptions, options);
+    const { name, ...otherOptions } = merge(
+      {
+        folderNames: {
+          commands: 'commands',
+          tasks: 'tasks',
+        },
+        createFoldersIfNotExisted: true,
+        ignoreGroupFolderName: 'ignore',
+        validatorOptions: {
+          coerce: true,
+          abortEarly: true,
+        },
+      },
+      options,
+    );
 
     this.client = client;
     this.name = name;
@@ -172,6 +188,9 @@ export default abstract class Addon {
       if (Resource.prototype instanceof Command || Resource.prototype instanceof Task) {
         const resource = new Resource(this.client);
 
+        // Do not load subcommands
+        if (resource.options.isSubcommand) return;
+
         this.resources.push({
           resource,
           category,
@@ -202,42 +221,72 @@ export default abstract class Addon {
       return;
     }
 
-    for (const { resource } of commands) {
-      let willDispatch;
+    for (const { resource } of commands)
+      this._dispatchCommandsRecursively(resource, message, commandArgs);
+  }
 
-      if (resource.willDispatch) willDispatch = await resource.willDispatch(message);
+  private async _dispatchCommandsRecursively(
+    command: Command,
+    message: Discord.Message,
+    args: string[],
+  ) {
+    if (command.instantiatedSubcommands) {
+      const [subcommandName, ...rest] = args;
 
-      if (willDispatch !== undefined && !willDispatch) continue;
+      if (!subcommandName && command.options.subcommands!.defaultToFirst) {
+        const defaultSubcommand = command.instantiatedSubcommands[0];
 
-      if (resource.shouldCooldown(message)) {
-        resource.didCooldown(message);
+        if (defaultSubcommand.options.schema)
+          throw new Error('Default subcommands must not have schema');
 
-        continue;
+        this._dispatchCommandsRecursively(command.instantiatedSubcommands[0], message, rest);
+
+        return;
       }
 
-      if (resource.shouldInhibitNSFW(message)) {
-        resource.didInhibitNSFW(message);
+      const subcommand = command.instantiatedSubcommands.find(
+        command => command.name === subcommandName || command.alias.includes(subcommandName),
+      );
 
-        continue;
+      if (!subcommand) {
+        this.didResolveCommandsUnsuccessfully(message, subcommandName || '', command.name);
+
+        return;
+      }
+
+      this._dispatchCommandsRecursively(subcommand, message, rest);
+    } else {
+      let willDispatch;
+
+      if (command.willDispatch) willDispatch = await command.willDispatch(message);
+
+      if (willDispatch !== undefined && !willDispatch) return;
+
+      if (command.shouldCooldown(message)) {
+        command.didCooldown(message);
+
+        return;
+      }
+
+      if (command.shouldInhibitNSFW(message)) {
+        command.didInhibitNSFW(message);
+
+        return;
       }
 
       let validatedArgs;
 
-      if (resource.options.schema) {
-        if (!Util.isObject(resource.options.schema))
+      if (command.options.schema) {
+        if (!Util.isObject(command.options.schema))
           throw new NebulaError('schema must be an object with validators');
 
-        const results = Validator.validate(
-          message,
-          commandArgs,
-          resource.options.schema,
-          this.options.validator,
-        );
+        const results = Validator.validate(message, args, command.options.schema, this.options
+          .validatorOptions as ValidatorOptions);
 
         const errors = Object.entries(results).filter(([, results]) => Util.isArray(results));
 
         if (errors.length) {
-          resource.didCatchValidationErrors(
+          command.didCatchValidationErrors(
             message,
             errors.reduce(
               (res, [key, result]) => {
@@ -249,23 +298,23 @@ export default abstract class Addon {
             ),
           );
 
-          continue;
+          return;
         }
 
         validatedArgs = results;
       }
 
-      if (!resource.didDispatch) continue;
+      if (!command.didDispatch) return;
 
-      const isSuccessfullyDispatched = await resource.didDispatch(message, validatedArgs);
+      const isSuccessfullyDispatched = await command.didDispatch(message, validatedArgs);
 
       if (isSuccessfullyDispatched !== undefined && !isSuccessfullyDispatched) {
-        if (resource.didDispatchUnsuccessfully) resource.didDispatchUnsuccessfully(message);
+        if (command.didDispatchUnsuccessfully) command.didDispatchUnsuccessfully(message);
 
-        continue;
+        return;
       }
 
-      if (resource.didDispatchSuccessfully) resource.didDispatchSuccessfully(message);
+      if (command.didDispatchSuccessfully) command.didDispatchSuccessfully(message);
     }
   }
 

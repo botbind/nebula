@@ -2,4 +2,5 @@ export interface Constructor<T> {
   new (...args: any[]): T;
 }
 
-export type LooseObject = Record<string, string>;
+export type MakeOptional<T, TOptional extends keyof T> = Partial<Pick<T, TOptional>> &
+  Omit<T, TOptional>;

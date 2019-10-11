@@ -1,38 +1,31 @@
 import Discord from 'discord.js';
-import merge from 'lodash.merge';
 import Util from './Util';
 import Addon from './Addon';
 import NebulaError from './NebulaError';
-import { Constructor } from './types';
+import { Constructor, MakeOptional } from './types';
 
 export interface ClientOptions extends Discord.ClientOptions {
   /**
    * Whether the client should "type" while processing the command
    */
-  typing?: boolean;
+  typing: boolean;
   /**
    * The default prefix when the client first boots up
    */
-  prefix?: string;
+  prefix: string;
   /**
    * Whether the client should start in debug mode
    */
-  debug?: boolean;
+  debug: boolean;
 }
 
 const addons: Addon[] = [];
-
-const defaultOptions = {
-  typing: false,
-  prefix: '!',
-  debug: false,
-};
 
 export default class NebulaClient extends Discord.Client {
   /**
    * The options of the client
    */
-  readonly options: ClientOptions & typeof defaultOptions;
+  readonly options: ClientOptions;
 
   /**
    * Invoked when the client becomes ready to start working
@@ -55,14 +48,20 @@ export default class NebulaClient extends Discord.Client {
    * The main hub for loading addons
    * @param options Options of the client
    */
-  constructor(options: ClientOptions = {}) {
+  constructor(options: MakeOptional<ClientOptions, 'typing' | 'prefix' | 'debug'> = {}) {
     if (!Util.isObject(options)) throw new NebulaError('clientOptions must be an object');
 
-    const mergedOptions = merge({}, defaultOptions, options);
+    const mergedOptions = {
+      typing: false,
+      prefix: '!',
+      debug: false,
+      ...options,
+    };
 
     super(mergedOptions);
 
     this.options = mergedOptions;
+
     this.on('ready', () => {
       if (this.didReady) this.didReady();
     })
@@ -90,13 +89,13 @@ export default class NebulaClient extends Discord.Client {
 
   /**
    * Load and start an addon
-   * @param Addon The addon to load
+   * @param AddonToLoad The addon to load
    */
-  protected load(Addon: Constructor<Addon>) {
-    if (Addon.prototype instanceof Addon)
-      throw new NebulaError('addon must inherit of the Addon class');
+  protected load(AddonToLoad: Constructor<Addon>) {
+    if (!(AddonToLoad.prototype instanceof Addon))
+      throw new NebulaError('addon must inherit the Addon class');
 
-    const addon = new Addon(this);
+    const addon = new AddonToLoad(this);
 
     addons.push(addon);
 

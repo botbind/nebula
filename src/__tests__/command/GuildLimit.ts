@@ -18,7 +18,7 @@ export default class GuildLimitCommand extends Command {
 
   async didDispatch(message: Discord.Message) {
     message.channel.send(
-      `You have ${this.options.limit.bucket -
+      `You have ${this.options.limit.bucket! -
         this.usage.get(message.guild.id)![0]} time(s) left before cooling down. Scope: Guild`,
     );
   }
