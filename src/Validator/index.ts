@@ -10,14 +10,9 @@ import ValidationError from './ValidationError';
 export type CommandArgTypes = string | number | boolean;
 
 /**
- * The validator types
- */
-export type ValidatorTypes = StringValidator | NumberValidator | BooleanValidator;
-
-/**
  * The validation schema
  */
-export type Schema = Record<string, ValidatorTypes>;
+export type Schema = Record<string, StringValidator | NumberValidator | BooleanValidator>;
 
 /**
  * The value store entry when validating

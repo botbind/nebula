@@ -23,7 +23,6 @@ import Task, { TaskOptions } from './Task';
 import NebulaError from './NebulaError';
 import Validator, {
   CommandArgTypes,
-  ValidatorTypes,
   Schema,
   ValueStoreEntry,
   ValueStore,
@@ -69,7 +68,6 @@ export {
   NebulaError,
   Validator,
   CommandArgTypes,
-  ValidatorTypes,
   Schema,
   ValueStoreEntry,
   ValueStore,
