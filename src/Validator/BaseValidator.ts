@@ -35,10 +35,10 @@ export default abstract class BaseValidator<T extends CommandArgTypes> {
   }
 
   /**
-   * Mark a value as required
+   * Mark a value as optional
    */
-  require() {
-    this.flags.required = true;
+  optional() {
+    this.flags.optional = true;
 
     return this;
   }

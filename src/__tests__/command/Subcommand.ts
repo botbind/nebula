@@ -7,7 +7,7 @@ class Child3 extends Command {
       name: 'child-3',
       isSubcommand: true,
       schema: {
-        num: Validator.number().require(),
+        num: Validator.number(),
       },
     });
   }

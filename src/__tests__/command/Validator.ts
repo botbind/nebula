@@ -6,9 +6,7 @@ export default class ValidatorCommand extends Command {
     super(client, {
       name: 'v',
       schema: {
-        mention: Validator.string()
-          .user()
-          .require(),
+        mention: Validator.string().user(),
       },
     });
   }

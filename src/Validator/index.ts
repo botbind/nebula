@@ -71,7 +71,7 @@ export type ValidationResults = Record<string, ValidationError[] | CommandArgTyp
  * The validation flags
  */
 export interface ValidationFlags {
-  required?: boolean;
+  optional?: boolean;
 }
 
 /**
@@ -111,7 +111,7 @@ export default class Validator {
       const err = [new ValidationError(currValue, currKey, currValidator.type)];
 
       if (currValue === undefined) {
-        if (currValidator.flags.required)
+        if (!currValidator.flags.optional)
           return {
             [currKey]: err,
           };
