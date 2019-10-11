@@ -1,5 +1,8 @@
-import Client, { ClientOptions } from './Client';
+import Client, { OptionalClientOptions, ClientOptionsArg, ClientOptions } from './Client';
 import Addon, {
+  OptionalAddonOptions,
+  RequiredAddonOptions,
+  AddonOptionsArg,
   AddonOptions,
   Resource,
   ResourceInfo,
@@ -7,7 +10,15 @@ import Addon, {
   FolderNames,
   CommandComponents,
 } from './Addon';
-import Command, { CommandOptions, LimitOptions, LimitScopes, SubcommandsOptions } from './Command';
+import Command, {
+  OptionalCommandOptions,
+  RequiredCommandOptions,
+  CommandOptionsArg,
+  CommandOptions,
+  LimitOptions,
+  LimitScopes,
+  SubcommandsOptions,
+} from './Command';
 import Task, { TaskOptions } from './Task';
 import NebulaError from './NebulaError';
 import Validator, {
@@ -28,12 +39,17 @@ import StringValidator from './Validator/StringValidator';
 import ValidationError from './Validator/ValidationError';
 import Debugger, { LogTypes } from './Debugger';
 import Util from './Util';
-import { Constructor, MakeOptional } from './types';
+import { Constructor } from './types';
 
 export {
   Client,
+  OptionalClientOptions,
+  ClientOptionsArg,
   ClientOptions,
   Addon,
+  OptionalAddonOptions,
+  RequiredAddonOptions,
+  AddonOptionsArg,
   AddonOptions,
   Resource,
   ResourceInfo,
@@ -41,6 +57,9 @@ export {
   FolderNames,
   CommandComponents,
   Command,
+  OptionalCommandOptions,
+  RequiredCommandOptions,
+  CommandOptionsArg,
   CommandOptions,
   LimitOptions,
   LimitScopes,
@@ -67,5 +86,4 @@ export {
   LogTypes,
   Util,
   Constructor,
-  MakeOptional,
 };

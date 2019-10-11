@@ -5,7 +5,7 @@ import Util from './Util';
 import NebulaError from './NebulaError';
 import { Schema, ValidationResults } from './Validator';
 import ValidationError from './Validator/ValidationError';
-import { Constructor, MakeOptional } from './types';
+import { Constructor } from './types';
 
 /**
  * The limit scopes
@@ -44,11 +44,10 @@ export interface SubcommandsOptions {
   commands: Constructor<Command>[];
 }
 
-export interface CommandOptions {
-  /**
-   * The name of the command
-   */
-  name: string;
+/**
+ * The optional options for the command
+ */
+export interface OptionalCommandOptions {
   /**
    * The alias of the command
    */
@@ -62,7 +61,7 @@ export interface CommandOptions {
   /**
    * The validation schema of the command
    */
-  schema?: Schema;
+  schema: Schema | null;
 
   /**
    * The usage limit for the command
@@ -77,7 +76,7 @@ export interface CommandOptions {
   /**
    * The subcommands for the command
    */
-  subcommands?: SubcommandsOptions;
+  subcommands: SubcommandsOptions | null;
 
   /**
    * Whether the command is a subcommand
@@ -85,7 +84,44 @@ export interface CommandOptions {
   isSubcommand: boolean;
 }
 
+/**
+ * The required options of the command
+ */
+export interface RequiredCommandOptions {
+  /**
+   * The name of the command
+   */
+  name: string;
+}
+
+/**
+ * The options for the command
+ */
+export type CommandOptions = Omit<
+  OptionalCommandOptions & RequiredCommandOptions,
+  'name' | 'description' | 'alias'
+>;
+
+/**
+ * The options passed as argument for the command
+ */
+export type CommandOptionsArg = Partial<OptionalCommandOptions> & RequiredCommandOptions;
+
 const limitScopes = ['user', 'guild'];
+
+const defaultOptions: OptionalCommandOptions = {
+  alias: [],
+  description: '',
+  schema: null,
+  nsfw: false,
+  limit: {
+    bucket: 1,
+    scope: 'user',
+    time: null,
+  },
+  subcommands: null,
+  isSubcommand: false,
+};
 
 export default class Command {
   /**
@@ -111,7 +147,7 @@ export default class Command {
   /**
    * The options of the command
    */
-  readonly options: Omit<CommandOptions, 'name' | 'description' | 'alias'>;
+  readonly options: CommandOptions;
 
   /**
    * The usage of the command
@@ -193,13 +229,7 @@ export default class Command {
    * @param client The client of the command
    * @param options The options of the command
    */
-  constructor(
-    client: Client,
-    options: MakeOptional<
-      CommandOptions,
-      'alias' | 'description' | 'limit' | 'nsfw' | 'isSubcommand'
-    >,
-  ) {
+  constructor(client: Client, options: CommandOptionsArg) {
     if (!Util.isObject(options)) throw new NebulaError('commandOptions must be an object');
 
     if (options.limit && options.limit.scope && !limitScopes.includes(options.limit.scope))
@@ -211,18 +241,7 @@ export default class Command {
     )
       throw new NebulaError('subcommands must have at least a command');
 
-    const { name, alias, description, ...otherOptions } = merge(
-      {
-        alias: [],
-        nsfw: false,
-        limit: {
-          bucket: 1,
-          scope: 'user',
-        },
-        isSubcommand: false,
-      },
-      options,
-    );
+    const { name, alias, description, ...otherOptions } = merge({}, defaultOptions, options);
 
     this.client = client;
     this.name = name;

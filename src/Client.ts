@@ -1,10 +1,14 @@
 import Discord from 'discord.js';
+import merge from 'lodash.merge';
 import Util from './Util';
 import Addon from './Addon';
 import NebulaError from './NebulaError';
-import { Constructor, MakeOptional } from './types';
+import { Constructor } from './types';
 
-export interface ClientOptions extends Discord.ClientOptions {
+/**
+ * The optional options for the client
+ */
+export interface OptionalClientOptions {
   /**
    * Whether the client should "type" while processing the command
    */
@@ -18,6 +22,22 @@ export interface ClientOptions extends Discord.ClientOptions {
    */
   debug: boolean;
 }
+
+/**
+ * The options for the client
+ */
+export type ClientOptions = OptionalClientOptions & Discord.ClientOptions;
+
+/**
+ * The options passed as argument for the client
+ */
+export type ClientOptionsArg = Partial<OptionalClientOptions> & Discord.ClientOptions;
+
+const defaultOptions: OptionalClientOptions = {
+  typing: false,
+  prefix: '!',
+  debug: false,
+};
 
 const addons: Addon[] = [];
 
@@ -48,15 +68,10 @@ export default class NebulaClient extends Discord.Client {
    * The main hub for loading addons
    * @param options Options of the client
    */
-  constructor(options: MakeOptional<ClientOptions, 'typing' | 'prefix' | 'debug'> = {}) {
+  constructor(options: ClientOptionsArg = {}) {
     if (!Util.isObject(options)) throw new NebulaError('clientOptions must be an object');
 
-    const mergedOptions = {
-      typing: false,
-      prefix: '!',
-      debug: false,
-      ...options,
-    };
+    const mergedOptions = merge({}, defaultOptions, options);
 
     super(mergedOptions);
 

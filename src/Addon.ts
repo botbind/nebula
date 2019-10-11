@@ -8,7 +8,7 @@ import Command from './Command';
 import Task from './Task';
 import NebulaError from './NebulaError';
 import Validator, { ValidatorOptions, ValidationResults } from './Validator';
-import { Constructor, MakeOptional } from './types';
+import { Constructor } from './types';
 
 export interface FolderNames {
   /**
@@ -21,17 +21,10 @@ export interface FolderNames {
   tasks: string;
 }
 
-export interface AddonOptions {
-  /**
-   * The name of the addon
-   */
-  name: string;
-
-  /**
-   * The base directory of the addon
-   */
-  baseDir: string;
-
+/**
+ * The default options for the addon
+ */
+export interface OptionalAddonOptions {
   /**
    * The folder names mapping
    */
@@ -52,6 +45,31 @@ export interface AddonOptions {
    */
   validatorOptions: Partial<ValidatorOptions>;
 }
+
+/**
+ * The required options for the addon
+ */
+export interface RequiredAddonOptions {
+  /**
+   * The name of the addon
+   */
+  name: string;
+
+  /**
+   * The base directory of the addon
+   */
+  baseDir: string;
+}
+
+/**
+ * The options for the addon
+ */
+export type AddonOptions = Omit<OptionalAddonOptions & RequiredAddonOptions, 'name'>;
+
+/**
+ * The options passed as argument for the addon
+ */
+export type AddonOptionsArg = Partial<OptionalAddonOptions> & RequiredAddonOptions;
 
 /**
  * Available and valid resource
@@ -77,6 +95,19 @@ export type ResourceList = ResourceInfo[];
  */
 export type CommandComponents = [string, string, string[]];
 
+const defaultOptions: OptionalAddonOptions = {
+  folderNames: {
+    commands: 'commands',
+    tasks: 'tasks',
+  },
+  createFoldersIfNotExisted: true,
+  ignoreGroupFolderName: 'ignore',
+  validatorOptions: {
+    coerce: true,
+    abortEarly: true,
+  },
+};
+
 export default abstract class Addon {
   /**
    * The client of the addon
@@ -91,7 +122,7 @@ export default abstract class Addon {
   /**
    * The options of the addon
    */
-  readonly options: Omit<AddonOptions, 'name'>;
+  readonly options: AddonOptions;
 
   /**
    * The loaded resources of the addon
@@ -117,30 +148,10 @@ export default abstract class Addon {
    * @param client The client of the addon
    * @param options The options of the addon
    */
-  constructor(
-    client: Client,
-    options: MakeOptional<
-      AddonOptions,
-      'folderNames' | 'createFoldersIfNotExisted' | 'ignoreGroupFolderName' | 'validatorOptions'
-    >,
-  ) {
+  constructor(client: Client, options: AddonOptionsArg) {
     if (!Util.isObject(options)) throw new NebulaError('addonOptions must be an object');
 
-    const { name, ...otherOptions } = merge(
-      {
-        folderNames: {
-          commands: 'commands',
-          tasks: 'tasks',
-        },
-        createFoldersIfNotExisted: true,
-        ignoreGroupFolderName: 'ignore',
-        validatorOptions: {
-          coerce: true,
-          abortEarly: true,
-        },
-      },
-      options,
-    );
+    const { name, ...otherOptions } = merge({}, defaultOptions, options);
 
     this.client = client;
     this.name = name;
