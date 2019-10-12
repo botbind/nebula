@@ -74,7 +74,7 @@ export default class Dispatcher {
           if (defaultSubcommand.options.schema)
             throw new Error('Default subcommands must not have schema');
 
-          this._dispatchCommandsRecursively(command.instantiatedSubcommands[0], message, rest);
+          this._dispatchCommandsRecursively(defaultSubcommand, message, rest);
           return;
         }
 
