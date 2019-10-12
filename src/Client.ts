@@ -1,7 +1,7 @@
 import Discord from 'discord.js';
 import merge from 'lodash.merge';
 import Util from './Util';
-import Addon from './Addon';
+import NebulaAddon from './Addon';
 import NebulaError from './NebulaError';
 import { Constructor } from './types';
 
@@ -106,11 +106,11 @@ export default class NebulaClient extends Discord.Client {
    * Load and start an addon
    * @param AddonToLoad The addon to load
    */
-  protected load(AddonToLoad: Constructor<Addon>) {
-    if (!(AddonToLoad.prototype instanceof Addon))
+  protected load(Addon: Constructor<NebulaAddon>) {
+    if (!(Addon.prototype instanceof NebulaAddon))
       throw new NebulaError('addon must inherit the Addon class');
 
-    const addon = new AddonToLoad(this);
+    const addon = new Addon(this);
 
     addons.push(addon);
 
