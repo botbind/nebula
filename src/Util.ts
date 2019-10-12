@@ -38,6 +38,16 @@ class Util {
 
     return !Number.isNaN(coerce);
   }
+
+  // https://github.com/Microsoft/TypeScript/issues/21826
+  // https://github.com/Microsoft/TypeScript/issues/26010
+  /**
+   * Returns an array of key/values of the enumerable properties of an object
+   * @param obj The object that contains the properties and methods
+   */
+  static entriesOf<T>(obj: T) {
+    return Object.entries(obj) as [Extract<keyof T, string>, T[keyof T]][];
+  }
 }
 
 export default Util;

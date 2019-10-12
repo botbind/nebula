@@ -163,8 +163,8 @@ export default abstract class Addon {
    * Load all the available and valid resources under the base directory
    */
   loadResources() {
-    Object.entries(this.options.folderNames).forEach(([category, categoryAlias]) => {
-      const categoryPath = path.resolve(this.options.baseDir, categoryAlias as string);
+    Util.entriesOf(this.options.folderNames).forEach(([category, categoryAlias]) => {
+      const categoryPath = path.resolve(this.options.baseDir, categoryAlias);
 
       if (!fs.existsSync(categoryPath) && this.options.createFoldersIfNotExisted)
         fs.mkdirSync(categoryPath);
@@ -294,7 +294,7 @@ export default abstract class Addon {
         const results = Validator.validate(message, args, command.options.schema, this.options
           .validatorOptions as ValidatorOptions);
 
-        const errors = Object.entries(results).filter(([, results]) => Util.isArray(results));
+        const errors = Util.entriesOf(results).filter(([, results]) => Util.isArray(results));
 
         if (errors.length) {
           command.didCatchValidationErrors(

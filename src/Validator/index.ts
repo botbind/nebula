@@ -3,6 +3,7 @@ import BooleanValidator from './BooleanValidator';
 import NumberValidator from './NumberValidator';
 import StringValidator from './StringValidator';
 import ValidationError from './ValidationError';
+import Util from '../Util';
 
 /**
  * The allowed command argument types
@@ -71,6 +72,9 @@ export type ValidationResults = Record<string, ValidationError[] | CommandArgTyp
  * The validation flags
  */
 export interface ValidationFlags {
+  /**
+   * Whether the value being validated is optiona;
+   */
   optional?: boolean;
 }
 
@@ -103,7 +107,7 @@ export default class Validator {
     options: ValidatorOptions,
   ): ValidationResults {
     const valueStore: ValueStore = {};
-    const validatorEntries = Object.entries(schema);
+    const validatorEntries = Util.entriesOf(schema);
 
     for (let i = 0; i < validatorEntries.length; i++) {
       const [currKey, currValidator] = validatorEntries[i];
