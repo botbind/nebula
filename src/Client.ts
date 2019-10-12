@@ -5,7 +5,7 @@ import NebulaAddon from './Addon';
 import NebulaError from './NebulaError';
 import { Constructor } from './types';
 
-interface OptionalClientOptions {
+interface DefaultClientOptions {
   /**
    * Whether the client should "type" while processing the command
    */
@@ -28,14 +28,14 @@ interface OptionalClientOptions {
 /**
  * The options for the client
  */
-export type ClientOptions = OptionalClientOptions & Discord.ClientOptions;
+export type ClientOptions = DefaultClientOptions & Discord.ClientOptions;
 
 /**
  * The options passed as argument for the client
  */
-export type ClientOptionsArg = Partial<OptionalClientOptions> & Discord.ClientOptions;
+export type ClientOptionsArg = Partial<DefaultClientOptions> & Discord.ClientOptions;
 
-const defaultOptions: OptionalClientOptions = {
+const defaultOptions: DefaultClientOptions = {
   typing: false,
   prefix: '!',
   debug: false,
@@ -72,7 +72,7 @@ export default class Client extends Discord.Client {
    * @param options Options of the client
    */
   constructor(options: ClientOptionsArg = {}) {
-    if (!Util.isObject(options)) throw new NebulaError('clientOptions must be an object');
+    if (!Util.isObject(options)) throw new NebulaError('The options for Client must be an object');
 
     const mergedOptions = merge({}, defaultOptions, options);
 
@@ -111,7 +111,7 @@ export default class Client extends Discord.Client {
    */
   protected load(Addon: Constructor<NebulaAddon>) {
     if (!(Addon.prototype instanceof NebulaAddon))
-      throw new NebulaError('addon must inherit the Addon class');
+      throw new NebulaError('The addon to be loaded must inherit the Addon class');
 
     const addon = new Addon(this);
 

@@ -52,7 +52,6 @@ export default class Dispatcher {
     if (!commands.length) {
       if (this.didResolveCommandsUnsuccessfully)
         this.didResolveCommandsUnsuccessfully(message, commandName);
-
       return;
     }
 
@@ -65,17 +64,21 @@ export default class Dispatcher {
     message: Discord.Message,
     args: string[],
   ) {
-    if (command.instantiatedSubcommands.length) {
+    if (command.instantiatedSubcommands) {
       const [subcommandName, ...rest] = args;
 
-      if (!subcommandName && command.options.subcommands.defaultToFirst) {
-        const defaultSubcommand = command.instantiatedSubcommands[0];
+      if (!subcommandName) {
+        if (command.options.subcommands.defaultToFirst) {
+          const defaultSubcommand = command.instantiatedSubcommands[0];
 
-        if (defaultSubcommand.options.schema)
-          throw new Error('Default subcommands must not have schema');
+          if (defaultSubcommand.options.schema)
+            throw new Error('Default subcommands must not have schema');
 
-        this._dispatchCommandsRecursively(command.instantiatedSubcommands[0], message, rest);
+          this._dispatchCommandsRecursively(command.instantiatedSubcommands[0], message, rest);
+          return;
+        }
 
+        this.didResolveCommandsUnsuccessfully(message, '', command.name);
         return;
       }
 
@@ -84,8 +87,7 @@ export default class Dispatcher {
       );
 
       if (!subcommand) {
-        this.didResolveCommandsUnsuccessfully(message, subcommandName || '', command.name);
-
+        this.didResolveCommandsUnsuccessfully(message, subcommandName, command.name);
         return;
       }
 
@@ -97,15 +99,20 @@ export default class Dispatcher {
 
       if (willDispatch !== undefined && !willDispatch) return;
 
-      if (command.shouldCooldown(message)) {
-        command.didCooldown(message);
+      const shouldInhibitPerm = await command.shouldInhibitPerm(message);
 
+      if (shouldInhibitPerm) {
+        command.didInhibitPerm(message);
+        return;
+      }
+
+      if (command.shouldInhibitLimit(message)) {
+        command.didInhibitLimit(message);
         return;
       }
 
       if (command.shouldInhibitNSFW(message)) {
         command.didInhibitNSFW(message);
-
         return;
       }
 
@@ -113,7 +120,9 @@ export default class Dispatcher {
 
       if (command.options.schema) {
         if (!Util.isObject(command.options.schema))
-          throw new NebulaError('schema must be an object with validators');
+          throw new NebulaError(
+            `The validation schema for command ${command.name} must be an object with validators`,
+          );
 
         const results = this.addon.validator.validate(message, args, command.options.schema);
 
@@ -131,7 +140,6 @@ export default class Dispatcher {
               {} as ValidationResults,
             ),
           );
-
           return;
         }
 
@@ -143,12 +151,12 @@ export default class Dispatcher {
       const isSuccessfullyDispatched = await command.didDispatch(message, validatedArgs);
 
       if (isSuccessfullyDispatched !== undefined && !isSuccessfullyDispatched) {
-        if (command.didDispatchUnsuccessfully) command.didDispatchUnsuccessfully(message);
-
+        if (command.didDispatchUnsuccessfully)
+          command.didDispatchUnsuccessfully(message, validatedArgs);
         return;
       }
 
-      if (command.didDispatchSuccessfully) command.didDispatchSuccessfully(message);
+      if (command.didDispatchSuccessfully) command.didDispatchSuccessfully(message, validatedArgs);
     }
   }
 

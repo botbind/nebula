@@ -36,18 +36,36 @@ export default class NumberValidator extends BaseValidator<number> {
   }
 
   /**
-   * Check if a value is in range
-   * @param min The min value
-   * @param max The max value
+   * Check if a value is greater than a minimum value
+   * @param number The minimum value
    */
-  range(min?: number, max?: number) {
-    if (!Util.isNumber(min)) throw new NebulaError('min must be a number');
-    if (!Util.isNumber(max)) throw new NebulaError('max must be a number');
+  min(number: number) {
+    if (!Util.isNumber(number))
+      throw new NebulaError('The minimum value for number.min must be a number');
 
     this.rules.push(({ value, rawValue, key }) => {
-      if ((!min || value >= min) && (!max || value <= max)) return true;
+      if (value >= number) return true;
 
-      this.addError(rawValue, key, 'number.range');
+      this.addError(rawValue, key, 'number.min');
+
+      return false;
+    });
+
+    return this;
+  }
+
+  /**
+   * Check if a value is smaller than a maximum value
+   * @param number The maximum value
+   */
+  max(number: number) {
+    if (!Util.isNumber(number))
+      throw new NebulaError('The maximum value for number.max must be a number');
+
+    this.rules.push(({ value, rawValue, key }) => {
+      if (value <= number) return true;
+
+      this.addError(rawValue, key, 'number.max');
 
       return false;
     });
@@ -60,7 +78,8 @@ export default class NumberValidator extends BaseValidator<number> {
    * @param number The number to check against
    */
   multiple(number: number) {
-    if (!Util.isNumber(number)) throw new NebulaError('number must be a number');
+    if (!Util.isNumber(number))
+      throw new NebulaError('The multiple value for number.multiple must be a number');
 
     this.rules.push(({ value, rawValue, key }) => {
       if (value % number === 0) return true;
@@ -78,7 +97,8 @@ export default class NumberValidator extends BaseValidator<number> {
    * @param number The number to check against
    */
   divide(number: number) {
-    if (!Util.isNumber(number)) throw new NebulaError('number must be a number');
+    if (!Util.isNumber(number))
+      throw new NebulaError('The divide value for number.divide must be a number');
 
     this.rules.push(({ value, rawValue, key }) => {
       if (number % value === 0) return true;
@@ -96,14 +116,18 @@ export default class NumberValidator extends BaseValidator<number> {
    * @param refKey The reference key
    */
   compare(refKey: string, direction: CompareDirections) {
-    if (typeof refKey !== 'string') throw new NebulaError('refKey must be a string');
+    if (typeof refKey !== 'string')
+      throw new NebulaError('The reference key for number.compare must be a string');
     if (!compareDirections.includes(direction))
-      throw new NebulaError('direction must be greater, smaller or equal');
+      throw new NebulaError(
+        'The direction of compare for number.compare must be greater, smaller, greater or equal, smaler or equal or equal',
+      );
 
     this.rules.push(({ value, rawValue, key, ref }) => {
       const entry = ref(refKey);
 
-      if (!entry) throw new NebulaError(`refKey "${refKey}" not found`);
+      if (!entry)
+        throw new NebulaError(`The reference key for number.compare "${refKey}" not found`);
 
       const { value: value2, type } = entry;
 

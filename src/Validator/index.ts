@@ -118,7 +118,8 @@ export default class Validator {
   readonly options: ValidatorOptions;
 
   constructor(options: ValidatorOptionsArg = {}) {
-    if (!Util.isObject(options)) throw new NebulaError('validatorOptions must be an object');
+    if (!Util.isObject(options))
+      throw new NebulaError('The options for Validator must be an object');
 
     this.options = merge({}, defaultOptions, options);
   }

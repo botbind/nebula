@@ -2,6 +2,7 @@ import Client from './Client';
 import NebulaStore from './Store';
 import NebulaDispatcher from './Dispatcher';
 import Util from './Util';
+import NebulaPermissions from './Permissions';
 import NebulaError from './NebulaError';
 import NebulaValidator from './Validator';
 import { Constructor } from './types';
@@ -30,6 +31,11 @@ export interface AddonOptions {
    * The customised instance of dispatcher
    */
   dispatcher?: Constructor<NebulaDispatcher>;
+
+  /**
+   * The customised instance of Permissions
+   */
+  permissions?: Constructor<NebulaPermissions>;
 }
 
 export default abstract class Addon {
@@ -54,6 +60,11 @@ export default abstract class Addon {
   validator: NebulaValidator;
 
   /**
+   * The permissions of the addon
+   */
+  permissions: NebulaPermissions;
+
+  /**
    * The name of the addon
    */
   readonly name: string;
@@ -69,14 +80,20 @@ export default abstract class Addon {
   didReady?(): void;
 
   /**
-   * The main hub for creating addons
+   * The entry point of all Nebula resources
    * @param client The client of the addon
    * @param options The options of the addon
    */
   constructor(client: Client, options: AddonOptions) {
-    if (!Util.isObject(options)) throw new NebulaError('addonOptions must be an object');
+    if (!Util.isObject(options)) throw new NebulaError('The options for Addon must be an object');
 
-    const { name, store: Store, dispatcher: Dispatcher, validator: Validator } = options;
+    const {
+      name,
+      store: Store,
+      dispatcher: Dispatcher,
+      validator: Validator,
+      permissions: Permission,
+    } = options;
 
     this.client = client;
     this.name = name;
@@ -84,5 +101,6 @@ export default abstract class Addon {
     this.store = Store ? new Store(this) : new NebulaStore(this);
     this.dispatcher = Dispatcher ? new Dispatcher(this) : new NebulaDispatcher(this);
     this.validator = Validator ? new Validator() : new NebulaValidator();
+    this.permissions = Permission ? new Permission(this) : new NebulaPermissions(this);
   }
 }

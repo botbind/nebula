@@ -6,7 +6,7 @@ import Command from './Command';
 import Task from './Task';
 import Util from './Util';
 import NebulaError from './NebulaError';
-import { Constructor, MakeKeysOptionalIn } from './types';
+import { Constructor, MakeOptsOptional } from './types';
 
 export interface FolderNames {
   /**
@@ -47,7 +47,7 @@ export interface StoreOptions {
 /**
  * The options passed as argument for the store
  */
-export type StoreOptionsArg = Partial<MakeKeysOptionalIn<StoreOptions, 'folderNames'>>;
+export type StoreOptionsArg = Partial<MakeOptsOptional<StoreOptions, 'folderNames'>>;
 
 /**
  * Available and valid resource
@@ -89,7 +89,7 @@ export default class Store extends Array<ResourceInfo> {
    * @param addon The addon of the store
    */
   constructor(addon: Addon, options: StoreOptionsArg = {}) {
-    if (!Util.isObject(options)) throw new NebulaError('storeOptions must be an object');
+    if (!Util.isObject(options)) throw new NebulaError('The options for Store must be an object');
 
     super(0);
 
@@ -119,7 +119,6 @@ export default class Store extends Array<ResourceInfo> {
 
             this._import(resourcePath, category, actualGroupName);
           });
-
           return;
         }
 

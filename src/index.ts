@@ -10,6 +10,7 @@ import Command, {
   SubcommandsOptions,
 } from './Command';
 import Task, { TaskOptions } from './Task';
+import Permissions, { PermissionCheck } from './Permissions';
 import NebulaError from './NebulaError';
 import Validator, {
   Primitives,
@@ -28,7 +29,7 @@ import StringValidator from './Validator/StringValidator';
 import ValidationError from './Validator/ValidationError';
 import Debugger, { LogTypes } from './Debugger';
 import Util from './Util';
-import { Constructor, MakeKeysOptionalIn, RevertRequisites, RevertRequisitesIn } from './types';
+import { Constructor, MakeRequired, MakeOptsOptional, MakeOptsRequired } from './types';
 
 export {
   Client,
@@ -52,6 +53,8 @@ export {
   SubcommandsOptions,
   Task,
   TaskOptions,
+  Permissions,
+  PermissionCheck,
   NebulaError,
   Validator,
   Primitives,
@@ -71,7 +74,7 @@ export {
   LogTypes,
   Util,
   Constructor,
-  MakeKeysOptionalIn,
-  RevertRequisites,
-  RevertRequisitesIn,
+  MakeRequired,
+  MakeOptsOptional,
+  MakeOptsRequired,
 };
