@@ -13,7 +13,9 @@ export type CommandArgTypes = string | number | boolean;
 /**
  * The validation schema
  */
-export type Schema = Record<string, StringValidator | NumberValidator | BooleanValidator>;
+export interface Schema {
+  [x: string]: StringValidator | NumberValidator | BooleanValidator;
+}
 
 /**
  * The value store entry when validating
@@ -27,7 +29,9 @@ export interface ValueStoreEntry {
 /**
  * The value store when validating
  */
-export type ValueStore = Record<string, ValueStoreEntry>;
+export interface ValueStore {
+  [x: string]: ValueStoreEntry;
+}
 
 export interface ValidationRuleArguments<T extends CommandArgTypes> {
   /**
@@ -66,7 +70,9 @@ export type ValidationRule<T extends CommandArgTypes = CommandArgTypes> = (
 /**
  * The validated value store
  */
-export type ValidationResults = Record<string, ValidationError[] | CommandArgTypes | null>;
+export interface ValidationResults {
+  [x: string]: ValidationError[] | CommandArgTypes | null;
+}
 
 /**
  * The validation flags
