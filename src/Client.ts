@@ -41,7 +41,7 @@ const defaultOptions: OptionalClientOptions = {
 
 const addons: Addon[] = [];
 
-export default class NebulaClient extends Discord.Client {
+export default class Client extends Discord.Client {
   /**
    * The options of the client
    */
