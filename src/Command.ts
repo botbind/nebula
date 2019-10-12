@@ -5,7 +5,7 @@ import Util from './Util';
 import NebulaError from './NebulaError';
 import { Schema, ValidationResults } from './Validator';
 import ValidationError from './Validator/ValidationError';
-import { Constructor, RevertRequisites, RevertRequisitesIn } from './types';
+import { Constructor, RevertRequisitesIn } from './types';
 
 /**
  * The limit scopes
