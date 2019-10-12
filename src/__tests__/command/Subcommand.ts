@@ -1,9 +1,9 @@
 import Discord from 'discord.js';
-import { Command, Client, Validator, ValidationResults } from '../..';
+import { Command, Addon, Validator, ValidationResults } from '../..';
 
 class Child3 extends Command {
-  constructor(client: Client) {
-    super(client, {
+  constructor(addon: Addon) {
+    super(addon, {
       name: 'child-3',
       isSubcommand: true,
       schema: {
@@ -18,8 +18,8 @@ class Child3 extends Command {
 }
 
 class Child1 extends Command {
-  constructor(client: Client) {
-    super(client, {
+  constructor(addon: Addon) {
+    super(addon, {
       name: 'child-1',
       isSubcommand: true,
       subcommands: {
@@ -34,8 +34,8 @@ class Child1 extends Command {
 }
 
 class Child2 extends Command {
-  constructor(client: Client) {
-    super(client, {
+  constructor(addon: Addon) {
+    super(addon, {
       name: 'child-2',
       isSubcommand: true,
     });
@@ -47,8 +47,8 @@ class Child2 extends Command {
 }
 
 export default class SubcommandCommand extends Command {
-  constructor(client: Client) {
-    super(client, {
+  constructor(addon: Addon) {
+    super(addon, {
       name: 's',
       subcommands: {
         commands: [Child1, Child2],

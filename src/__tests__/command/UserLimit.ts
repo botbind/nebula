@@ -1,9 +1,9 @@
 import Discord from 'discord.js';
-import { Command, Client } from '../..';
+import { Command, Addon } from '../..';
 
 export default class UserLimitCommand extends Command {
-  constructor(client: Client) {
-    super(client, {
+  constructor(addon: Addon) {
+    super(addon, {
       name: 'u',
       limit: {
         time: 5000,

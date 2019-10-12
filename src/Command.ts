@@ -1,6 +1,6 @@
 import Discord from 'discord.js';
 import merge from 'lodash.merge';
-import Client from './Client';
+import Addon from './Addon';
 import Util from './Util';
 import NebulaError from './NebulaError';
 import { Schema, ValidationResults } from './Validator';
@@ -125,9 +125,9 @@ const defaultOptions: OptionalCommandOptions = {
 
 export default class Command {
   /**
-   * The client of the command
+   * The addon of the command
    */
-  protected client: Client;
+  protected addon: Addon;
 
   /**
    * The name of the command
@@ -229,7 +229,7 @@ export default class Command {
    * @param client The client of the command
    * @param options The options of the command
    */
-  constructor(client: Client, options: CommandOptionsArg) {
+  constructor(addon: Addon, options: CommandOptionsArg) {
     if (!Util.isObject(options)) throw new NebulaError('commandOptions must be an object');
 
     if (options.limit && options.limit.scope && !limitScopes.includes(options.limit.scope))
@@ -243,7 +243,7 @@ export default class Command {
 
     const { name, alias, description, ...otherOptions } = merge({}, defaultOptions, options);
 
-    this.client = client;
+    this.addon = addon;
     this.name = name;
     this.alias = alias;
     this.description = description;

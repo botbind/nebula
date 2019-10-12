@@ -1,9 +1,9 @@
 import Discord from 'discord.js';
-import { Command, Client, Validator, ValidationResults } from '../..';
+import { Command, Addon, Validator, ValidationResults } from '../..';
 
 export default class ValidatorCommand extends Command {
-  constructor(client: Client) {
-    super(client, {
+  constructor(addon: Addon) {
+    super(addon, {
       name: 'v',
       schema: {
         mention: Validator.string().user(),
