@@ -135,7 +135,6 @@ export default class Validator {
       };
     }
 
-    let hasErrors = false;
     const results: ValidationResults = {};
 
     for (let i = 0; i < validatorEntries.length; i++) {

@@ -21,6 +21,11 @@ export interface OptionalClientOptions {
    * Whether the client should start in debug mode
    */
   debug: boolean;
+
+  /**
+   * The owner IDs of the client
+   */
+  owners: string[];
 }
 
 /**
@@ -37,6 +42,7 @@ const defaultOptions: OptionalClientOptions = {
   typing: false,
   prefix: '!',
   debug: false,
+  owners: [],
 };
 
 const addons: Addon[] = [];

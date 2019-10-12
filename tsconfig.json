@@ -10,6 +10,7 @@
     "allowSyntheticDefaultImports": true,
     "noErrorTruncation": true,
     "allowJs": true,
+    "downlevelIteration": true,
     "baseUrl": "."
   },
   "exclude": ["node_modules", "dist"]
