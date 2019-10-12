@@ -18,6 +18,11 @@ interface OptionalClientOptions {
    * Whether the client should start in debug mode
    */
   debug: boolean;
+
+  /**
+   * The discord ids for bot owners of the client
+   */
+  owners: string[];
 }
 
 /**
@@ -34,6 +39,7 @@ const defaultOptions: OptionalClientOptions = {
   typing: false,
   prefix: '!',
   debug: false,
+  owners: [],
 };
 
 const addons: NebulaAddon[] = [];
