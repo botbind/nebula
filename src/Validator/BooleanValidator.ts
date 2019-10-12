@@ -1,7 +1,7 @@
 import BaseValidator from './BaseValidator';
 
-const truthyValues = ['true', '1', '+', 'yes', 'y', 'enable', 'enabled', 'on'];
-const falsyValues = ['false', '0', '-', 'no', 'n', 'disable', 'disabled', 'off'];
+const truthyValues = ['true', '1', '+'];
+const falsyValues = ['false', '0', '-'];
 
 export default class BooleanValidator extends BaseValidator<boolean> {
   /**

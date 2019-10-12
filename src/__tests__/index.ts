@@ -4,7 +4,8 @@ import { Client } from '..';
 
 class TestClient extends Client {
   didReady() {
-    this.load(TestAddon).user.setActivity('Tests ready!');
+    this.load(TestAddon);
+    this.user.setActivity('Tests ready!');
   }
 
   didCatchError(err: Error) {
@@ -12,6 +13,6 @@ class TestClient extends Client {
   }
 }
 
-const client = new TestClient({ debug: true, typing: true, owners: ['578871214085242880'] });
+const client = new TestClient({ debug: true, typing: true });
 
 client.login(process.env.DISCORD_TOKEN);

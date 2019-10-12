@@ -95,14 +95,6 @@ export type ResourceList = ResourceInfo[];
  */
 export type CommandComponents = [string, string, string[]];
 
-/**
- * The stored permission levels of the addon
- */
-export type Permissions = Discord.Collection<
-  number,
-  (message: Discord.Message) => Promise<boolean>
->;
-
 const defaultOptions: OptionalAddonOptions = {
   folderNames: {
     commands: 'commands',
@@ -138,11 +130,6 @@ export default abstract class Addon {
   readonly resources: ResourceList;
 
   /**
-   * The stored permission levels of the addon
-   */
-  readonly permissions: Permissions;
-
-  /**
    * Invoked when the addon becomes ready to start working
    */
   didReady?(): void;
@@ -170,13 +157,6 @@ export default abstract class Addon {
     this.name = name;
     this.options = otherOptions;
     this.resources = [];
-    this.permissions = new Discord.Collection();
-
-    this.permissions
-      .set(0, async () => true)
-      .set(6, async message => message.member.permissions.has('MANAGE_GUILD'))
-      .set(7, async message => message.member.id === message.guild.owner.id)
-      .set(10, async message => this.client.options.owners.includes(message.author.id));
   }
 
   /**
@@ -297,25 +277,6 @@ export default abstract class Addon {
         command.didCooldown(message);
 
         return;
-      }
-
-      if (command.options.permission.exact) {
-        const commandPermLevel = command.options.permission.level;
-        const permCondition = this.permissions.get(commandPermLevel);
-
-        if (!permCondition) throw new NebulaError(`Permission level ${commandPermLevel} not found`);
-
-        if (!permCondition(message)) {
-          command.didInhibitPerm(message);
-
-          return;
-        }
-      } else {
-        for (const [level, permCondition] of this.permissions.entries()) {
-          if (permCondition(message)) break;
-
-          command.didInhibitPerm(message);
-        }
       }
 
       if (command.shouldInhibitNSFW(message)) {

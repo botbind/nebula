@@ -1,7 +1,6 @@
 import Discord from 'discord.js';
 import merge from 'lodash.merge';
 import Client from './Client';
-import { Permissions } from './Addon';
 import Util from './Util';
 import NebulaError from './NebulaError';
 import { Schema, ValidationResults } from './Validator';
@@ -45,18 +44,6 @@ export interface SubcommandsOptions {
   commands: Constructor<Command>[];
 }
 
-export interface PermissionOptions {
-  /**
-   * Whether the command requires the exact permission level
-   */
-  exact?: boolean;
-
-  /**
-   * The permission level for the command
-   */
-  level: number;
-}
-
 /**
  * The optional options for the command
  */
@@ -95,11 +82,6 @@ export interface OptionalCommandOptions {
    * Whether the command is a subcommand
    */
   isSubcommand: boolean;
-
-  /**
-   * The permission options for the command
-   */
-  permission: PermissionOptions;
 }
 
 /**
@@ -139,10 +121,6 @@ const defaultOptions: OptionalCommandOptions = {
   },
   subcommands: null,
   isSubcommand: false,
-  permission: {
-    exact: false,
-    level: 0,
-  },
 };
 
 export default class Command {
@@ -194,14 +172,6 @@ export default class Command {
    */
   didInhibitNSFW(message: Discord.Message) {
     message.channel.send('This command should only be sent in a NSFW channel');
-  }
-
-  /**
-   * Invoked after the command is inhibited due to the lack of permissions
-   * @param message The created message
-   */
-  didInhibitPerm(message: Discord.Message) {
-    message.channel.send('You do not have enough permissions to run this command');
   }
 
   /**
@@ -341,6 +311,7 @@ export default class Command {
    * Whether the NSFW-marked command should be inhibited
    * @param message The created message
    */
+
   shouldInhibitNSFW(message: Discord.Message) {
     return this.options.nsfw && !(message.channel as Discord.TextChannel).nsfw;
   }
