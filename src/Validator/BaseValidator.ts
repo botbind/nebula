@@ -1,8 +1,8 @@
 import ValidationError from './ValidationError';
-import { ValidationRule, ValidationFlags, CommandArgTypes } from './';
+import { ValidationRule, ValidationFlags, Primitives } from './';
 import NebulaError from '../NebulaError';
 
-export default abstract class BaseValidator<T extends CommandArgTypes> {
+export default abstract class BaseValidator<T extends Primitives> {
   /**
    * The type of the validator
    */
@@ -101,5 +101,5 @@ export default abstract class BaseValidator<T extends CommandArgTypes> {
    * Coerce a value
    * @param value The value to coerce from
    */
-  abstract coerce(value: any): CommandArgTypes | null;
+  abstract coerce(value: any): Primitives | null;
 }

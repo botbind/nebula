@@ -5,10 +5,7 @@ import NebulaAddon from './Addon';
 import NebulaError from './NebulaError';
 import { Constructor } from './types';
 
-/**
- * The optional options for the client
- */
-export interface OptionalClientOptions {
+interface OptionalClientOptions {
   /**
    * Whether the client should "type" while processing the command
    */
@@ -39,7 +36,7 @@ const defaultOptions: OptionalClientOptions = {
   debug: false,
 };
 
-const addons: Addon[] = [];
+const addons: NebulaAddon[] = [];
 
 export default class Client extends Discord.Client {
   /**
@@ -86,13 +83,13 @@ export default class Client extends Discord.Client {
         if (this.didMessage) this.didMessage(message);
 
         addons.forEach(addon => {
-          const commandComponents = addon.parseCommand(message.content);
+          const commandComponents = addon.dispatcher.parseCommand(message.content);
 
           if (commandComponents[0] !== this.options.prefix) return;
 
           if (this.options.typing) message.channel.startTyping();
 
-          addon.dispatch(message, commandComponents);
+          addon.dispatcher.dispatch(message, commandComponents);
 
           if (this.options.typing) message.channel.stopTyping();
         });
@@ -114,7 +111,7 @@ export default class Client extends Discord.Client {
 
     addons.push(addon);
 
-    addon.loadResources();
+    addon.store.load();
     if (addon.didReady) addon.didReady();
 
     return this;

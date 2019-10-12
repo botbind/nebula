@@ -1,18 +1,8 @@
-import Client, { OptionalClientOptions, ClientOptionsArg, ClientOptions } from './Client';
-import Addon, {
-  OptionalAddonOptions,
-  RequiredAddonOptions,
-  AddonOptionsArg,
-  AddonOptions,
-  Resource,
-  ResourceInfo,
-  ResourceList,
-  FolderNames,
-  CommandComponents,
-} from './Addon';
+import Client, { ClientOptionsArg, ClientOptions } from './Client';
+import Addon, { AddonOptions } from './Addon';
+import Dispatcher, { CommandComponents } from './Dispatcher';
+import Store, { FolderNames, StoreOptions, StoreOptionsArg, Resource, ResourceInfo } from './Store';
 import Command, {
-  OptionalCommandOptions,
-  RequiredCommandOptions,
   CommandOptionsArg,
   CommandOptions,
   LimitOptions,
@@ -22,7 +12,7 @@ import Command, {
 import Task, { TaskOptions } from './Task';
 import NebulaError from './NebulaError';
 import Validator, {
-  CommandArgTypes,
+  Primitives,
   Schema,
   ValueStoreEntry,
   ValueStore,
@@ -38,26 +28,23 @@ import StringValidator from './Validator/StringValidator';
 import ValidationError from './Validator/ValidationError';
 import Debugger, { LogTypes } from './Debugger';
 import Util from './Util';
-import { Constructor } from './types';
+import { Constructor, MakeKeysOptionalIn, RevertRequisites, RevertRequisitesIn } from './types';
 
 export {
   Client,
-  OptionalClientOptions,
   ClientOptionsArg,
   ClientOptions,
   Addon,
-  OptionalAddonOptions,
-  RequiredAddonOptions,
-  AddonOptionsArg,
   AddonOptions,
+  Store,
+  StoreOptions,
+  StoreOptionsArg,
   Resource,
   ResourceInfo,
-  ResourceList,
   FolderNames,
+  Dispatcher,
   CommandComponents,
   Command,
-  OptionalCommandOptions,
-  RequiredCommandOptions,
   CommandOptionsArg,
   CommandOptions,
   LimitOptions,
@@ -67,7 +54,7 @@ export {
   TaskOptions,
   NebulaError,
   Validator,
-  CommandArgTypes,
+  Primitives,
   Schema,
   ValueStoreEntry,
   ValueStore,
@@ -84,4 +71,7 @@ export {
   LogTypes,
   Util,
   Constructor,
+  MakeKeysOptionalIn,
+  RevertRequisites,
+  RevertRequisitesIn,
 };

@@ -1,14 +1,16 @@
 import Discord from 'discord.js';
+import merge from 'lodash.merge';
 import BooleanValidator from './BooleanValidator';
 import NumberValidator from './NumberValidator';
 import StringValidator from './StringValidator';
 import ValidationError from './ValidationError';
+import NebulaError from '../NebulaError';
 import Util from '../Util';
 
 /**
  * The allowed command argument types
  */
-export type CommandArgTypes = string | number | boolean;
+export type Primitives = string | number | boolean;
 
 /**
  * The validation schema
@@ -21,7 +23,7 @@ export interface Schema {
  * The value store entry when validating
  */
 export interface ValueStoreEntry {
-  value: CommandArgTypes;
+  value: Primitives;
   type: string;
   rawValue: string;
 }
@@ -33,7 +35,7 @@ export interface ValueStore {
   [x: string]: ValueStoreEntry;
 }
 
-export interface ValidationRuleArguments<T extends CommandArgTypes> {
+export interface ValidationRuleArguments<T extends Primitives> {
   /**
    * The coerced value to validate
    */
@@ -63,7 +65,7 @@ export interface ValidationRuleArguments<T extends CommandArgTypes> {
 /**
  * The validation rule
  */
-export type ValidationRule<T extends CommandArgTypes = CommandArgTypes> = (
+export type ValidationRule<T extends Primitives = Primitives> = (
   arg: ValidationRuleArguments<T>,
 ) => boolean;
 
@@ -71,7 +73,7 @@ export type ValidationRule<T extends CommandArgTypes = CommandArgTypes> = (
  * The validated value store
  */
 export interface ValidationResults {
-  [x: string]: ValidationError[] | CommandArgTypes | null;
+  [x: string]: ValidationError[] | Primitives | null;
 }
 
 /**
@@ -98,20 +100,36 @@ export interface ValidatorOptions {
   coerce: boolean;
 }
 
+/**
+ * The options passed as argument of the validator
+ */
+export type ValidatorOptionsArg = Partial<ValidatorOptions>;
+
+const defaultOptions: ValidatorOptions = {
+  abortEarly: true,
+  coerce: true,
+};
+
 export default class Validator {
+  /**
+   *
+   * @param options
+   */
+  readonly options: ValidatorOptions;
+
+  constructor(options: ValidatorOptionsArg = {}) {
+    if (!Util.isObject(options)) throw new NebulaError('validatorOptions must be an object');
+
+    this.options = merge({}, defaultOptions, options);
+  }
+
   /**
    * Validate an array of values against a validation schema
    * @param message The created message
    * @param values The values to validate
    * @param schema The validation schema
-   * @param options The options of the validator
    */
-  static validate(
-    message: Discord.Message,
-    values: string[],
-    schema: Schema,
-    options: ValidatorOptions,
-  ): ValidationResults {
+  validate(message: Discord.Message, values: string[], schema: Schema): ValidationResults {
     const valueStore: ValueStore = {};
     const validatorEntries = Util.entriesOf(schema);
 
@@ -145,7 +163,6 @@ export default class Validator {
       };
     }
 
-    let hasErrors = false;
     const results: ValidationResults = {};
 
     for (let i = 0; i < validatorEntries.length; i++) {
@@ -165,17 +182,16 @@ export default class Validator {
           message,
         });
 
-        if (!result && options.abortEarly)
+        if (!result && this.options.abortEarly)
           return {
             [currKey]: currValidator.errs,
           };
       }
 
       if (currValidator.errs.length) {
-        hasErrors = true;
         results[currKey] = currValidator.errs;
       } else {
-        results[currKey] = options.coerce ? valueStore[currKey].value : currRawValue;
+        results[currKey] = this.options.coerce ? valueStore[currKey].value : currRawValue;
       }
     }
 

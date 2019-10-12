@@ -5,7 +5,7 @@ import Util from './Util';
 import NebulaError from './NebulaError';
 import { Schema, ValidationResults } from './Validator';
 import ValidationError from './Validator/ValidationError';
-import { Constructor } from './types';
+import { Constructor, RevertRequisites, RevertRequisitesIn } from './types';
 
 /**
  * The limit scopes
@@ -24,7 +24,7 @@ export interface LimitOptions {
   /**
    * The amount of time in milliseconds that the limit applies
    */
-  time: number | null;
+  time: number;
 
   /**
    * The limit scope of the command
@@ -32,6 +32,9 @@ export interface LimitOptions {
   scope?: LimitScopes;
 }
 
+/**
+ * The options for subcommands
+ */
 export interface SubcommandsOptions {
   /**
    * Whether the default subcommand should be the first in the list
@@ -44,10 +47,7 @@ export interface SubcommandsOptions {
   commands: Constructor<Command>[];
 }
 
-/**
- * The optional options for the command
- */
-export interface OptionalCommandOptions {
+interface OptionalCommandOptions {
   /**
    * The alias of the command
    */
@@ -61,12 +61,12 @@ export interface OptionalCommandOptions {
   /**
    * The validation schema of the command
    */
-  schema: Schema | null;
+  schema?: Schema;
 
   /**
    * The usage limit for the command
    */
-  limit: LimitOptions;
+  limit: Required<LimitOptions>;
 
   /**
    * Whether the command is NSFW
@@ -76,7 +76,7 @@ export interface OptionalCommandOptions {
   /**
    * The subcommands for the command
    */
-  subcommands: SubcommandsOptions | null;
+  subcommands: Required<SubcommandsOptions>;
 
   /**
    * Whether the command is a subcommand
@@ -84,10 +84,7 @@ export interface OptionalCommandOptions {
   isSubcommand: boolean;
 }
 
-/**
- * The required options of the command
- */
-export interface RequiredCommandOptions {
+interface RequiredCommandOptions {
   /**
    * The name of the command
    */
@@ -97,29 +94,34 @@ export interface RequiredCommandOptions {
 /**
  * The options for the command
  */
-export type CommandOptions = Omit<
-  OptionalCommandOptions & RequiredCommandOptions,
-  'name' | 'description' | 'alias'
->;
+export type CommandOptions = OptionalCommandOptions & RequiredCommandOptions;
 
 /**
  * The options passed as argument for the command
  */
-export type CommandOptionsArg = Partial<OptionalCommandOptions> & RequiredCommandOptions;
+export type CommandOptionsArg = Partial<
+  RevertRequisitesIn<
+    RevertRequisitesIn<OptionalCommandOptions, 'subcommands', 'commands'>,
+    'limit',
+    'time'
+  >
+> &
+  RequiredCommandOptions;
 
 const limitScopes = ['user', 'guild'];
 
-const defaultOptions: OptionalCommandOptions = {
+const defaultOptions: RevertRequisitesIn<OptionalCommandOptions, 'limit', 'bucket' | 'scope'> = {
   alias: [],
   description: '',
-  schema: null,
   nsfw: false,
   limit: {
     bucket: 1,
     scope: 'user',
-    time: null,
   },
-  subcommands: null,
+  subcommands: {
+    commands: [],
+    defaultToFirst: false,
+  },
   isSubcommand: false,
 };
 
@@ -157,7 +159,7 @@ export default class Command {
   /**
    * The instantiated subcommands of this command
    */
-  instantiatedSubcommands?: Command[];
+  instantiatedSubcommands: Command[];
 
   private _sweepInterval: NodeJS.Timeout | null;
 
@@ -180,8 +182,8 @@ export default class Command {
    * @param scope The cooldown scope
    */
   didCooldown(message: Discord.Message) {
-    const id = this.options.limit.scope === 'guild' ? message.guild.id : message.author.id;
-    const timeLeft = (this.options.limit.time! - (Date.now() - this.usage.get(id)![1])) / 1000;
+    const id = this.options.limit!.scope === 'guild' ? message.guild.id : message.author.id;
+    const timeLeft = (this.options.limit!.time! - (Date.now() - this.usage.get(id)![1])) / 1000;
 
     message.channel.send(`You have ${timeLeft} seconds left before you can run this command again`);
   }
@@ -241,28 +243,28 @@ export default class Command {
     )
       throw new NebulaError('subcommands must have at least a command');
 
-    const { name, alias, description, ...otherOptions } = merge({}, defaultOptions, options);
+    const mergedOptions = merge({}, defaultOptions, options);
+    const { name, alias, description } = mergedOptions;
 
     this.addon = addon;
     this.name = name;
     this.alias = alias;
     this.description = description;
-    this.options = otherOptions;
+    this.options = mergedOptions;
     this.usage = new Discord.Collection();
     this._sweepInterval = null;
 
-    if (this.options.subcommands)
-      this.instantiatedSubcommands = this.options.subcommands.commands.map(Subcommand => {
-        if (!(Subcommand.prototype instanceof Command))
-          throw new NebulaError('subcommands must inherit the Command class');
+    this.instantiatedSubcommands = this.options.subcommands.commands.map(Subcommand => {
+      if (!(Subcommand.prototype instanceof Command))
+        throw new NebulaError('subcommands must inherit the Command class');
 
-        const subcommand = new Subcommand(this.client);
+      const subcommand = new Subcommand(this.addon);
 
-        if (!subcommand.options.isSubcommand)
-          throw new NebulaError('subcommands must have isSubcommand set to true');
+      if (!subcommand.options.isSubcommand)
+        throw new NebulaError('subcommands must have isSubcommand set to true');
 
-        return new Subcommand(this.client);
-      });
+      return new Subcommand(this.addon);
+    });
   }
 
   /**
