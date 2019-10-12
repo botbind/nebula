@@ -97,6 +97,11 @@ interface DefaultCommandOptions {
    * The permission options for the command
    */
   permission: PermissionOptions;
+
+  /**
+   * The required Discord permissions for the command
+   */
+  requiredPermissions: Discord.PermissionResolvable[];
 }
 
 interface RequiredCommandOptions {
@@ -148,6 +153,7 @@ const defaultOptions: EnhancedDefaultCommandOptions = {
   permission: {
     exact: false,
   },
+  requiredPermissions: [],
 };
 
 export default class Command {
