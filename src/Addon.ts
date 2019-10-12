@@ -112,7 +112,7 @@ export default abstract class Addon {
   /**
    * The client of the addon
    */
-  protected client: Client;
+  client: Client;
 
   /**
    * The name of the addon
