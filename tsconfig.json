@@ -6,11 +6,10 @@
     "moduleResolution": "node",
     "forceConsistentCasingInFileNames": true,
     "strict": true,
-    "noEmit": true,
+    "declaration": true,
     "allowSyntheticDefaultImports": true,
     "downlevelIteration": true,
     "noErrorTruncation": true,
-    "allowJs": true,
     "baseUrl": "."
   },
   "exclude": ["node_modules", "dist"]

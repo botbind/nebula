@@ -3,6 +3,7 @@
   "version": "0.0.1-beta",
   "description": "A lifecycle based Discord framework, completely modular and customisable!",
   "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/botbind/nebula.git"
@@ -14,11 +15,11 @@
   },
   "homepage": "https://github.com/botbind/nebula#readme",
   "scripts": {
-    "build": "rimraf dist && babel --extensions \".ts\" src -d dist",
+    "build": "rimraf dist && babel --extensions \".ts\" src -d dist && tsc --emitDeclarationOnly --outFile dist/index.d.ts",
     "test": "cross-env NODE_ENV=development nodemon -e ts --exec babel-node --extensions \".ts\" src/__tests__",
     "lint": "eslint . --cache --report-unused-disable-directives && echo \"No errors found\"",
     "lint:fix": "eslint . --cache --fix && echo \"No errors found\"",
-    "types:check": "tsc"
+    "types:check": "tsc --noEmit"
   },
   "peerDependencies": {
     "discord.js": "latest"
