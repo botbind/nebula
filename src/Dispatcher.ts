@@ -125,7 +125,6 @@ export default class Dispatcher {
           );
 
         const results = this.addon.validator.validate(message, args, command.options.schema);
-
         const errors = Util.entriesOf(results).filter(([, results]) => Util.isArray(results));
 
         if (errors.length) {
