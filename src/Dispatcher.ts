@@ -72,7 +72,7 @@ export default class Dispatcher {
           const defaultSubcommand = command.instantiatedSubcommands[0];
 
           if (defaultSubcommand.options.schema)
-            throw new Error('Default subcommands must not have schema');
+            throw new NebulaError('Default subcommands must not have schema');
 
           this._dispatchCommandsRecursively(defaultSubcommand, message, rest);
           return;
