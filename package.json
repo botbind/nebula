@@ -15,11 +15,11 @@
   },
   "homepage": "https://github.com/botbind/nebula#readme",
   "scripts": {
-    "build": "rimraf dist && babel --extensions \".ts\" src -d dist && tsc --emitDeclarationOnly --outFile dist/index.d.ts",
+    "build": "rimraf dist && babel --extensions \".ts\" src -d dist && tsc -p tsconfig.build.json",
     "test": "cross-env NODE_ENV=development nodemon -e ts --exec babel-node --extensions \".ts\" src/__tests__",
     "lint": "eslint . --cache --report-unused-disable-directives && echo \"No errors found\"",
     "lint:fix": "eslint . --cache --fix && echo \"No errors found\"",
-    "types:check": "tsc --noEmit"
+    "types:check": "tsc -p tsconfig.tc.json"
   },
   "peerDependencies": {
     "discord.js": "latest"

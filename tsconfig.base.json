@@ -6,7 +6,6 @@
     "moduleResolution": "node",
     "forceConsistentCasingInFileNames": true,
     "strict": true,
-    "declaration": true,
     "allowSyntheticDefaultImports": true,
     "downlevelIteration": true,
     "noErrorTruncation": true,
