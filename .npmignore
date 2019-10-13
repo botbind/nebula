@@ -1,0 +1,11 @@
+src
+assets
+
+.editorconfig
+.env
+.eslintcache
+.eslintignore
+.eslintrc.js
+.prettierrc.js
+babel.config.js
+tsconfig.json

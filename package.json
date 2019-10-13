@@ -14,7 +14,7 @@
   },
   "homepage": "https://github.com/botbind/nebula#readme",
   "scripts": {
-    "build": "cross-env NODE_ENV=production rimraf dist && babel --extensions \".ts\" src -d dist/src",
+    "build": "rimraf dist && babel --extensions \".ts\" src -d dist",
     "test": "cross-env NODE_ENV=development nodemon -e ts --exec babel-node --extensions \".ts\" src/__tests__",
     "lint": "eslint . --cache --report-unused-disable-directives && echo \"No errors found\"",
     "lint:fix": "eslint . --cache --fix && echo \"No errors found\"",
@@ -33,6 +33,7 @@
     "babel-eslint": "^10.0.1",
     "cross-env": "^5.2.0",
     "discord.js": "^11.5.1",
+    "dotenv": "^8.1.0",
     "eslint": "^5.16.0",
     "eslint-config-airbnb-base": "^13.1.0",
     "eslint-config-prettier": "^4.1.0",
@@ -46,7 +47,6 @@
     "@types/lodash.merge": "^4.6.6",
     "colors": "^1.4.0",
     "dayjs": "^1.8.16",
-    "dotenv": "^8.1.0",
     "lodash.merge": "^4.6.2"
   }
 }
