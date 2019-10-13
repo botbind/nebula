@@ -51,6 +51,11 @@ export default class Client extends Discord.Client {
   readonly options: ClientOptions;
 
   /**
+   * The application of the client
+   */
+  app: Discord.OAuth2Application | null;
+
+  /**
    * Invoked when the client becomes ready to start working
    */
   didReady?(): void;
@@ -79,8 +84,15 @@ export default class Client extends Discord.Client {
     super(mergedOptions);
 
     this.options = mergedOptions;
+    this.app = null;
 
-    this.on('ready', () => {
+    this.on('ready', async () => {
+      const app = await this.fetchApplication();
+
+      this.app = app;
+
+      if (!this.options.owners.includes(app.owner.id)) this.options.owners.push(app.owner.id);
+
       if (this.didReady) this.didReady();
     })
       .on('message', message => {
