@@ -1,6 +1,6 @@
 {
   "name": "@botbind/nebula",
-  "version": "0.0.2-beta",
+  "version": "0.0.3-beta",
   "description": "A lifecycle based Discord framework, completely modular and customisable!",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
