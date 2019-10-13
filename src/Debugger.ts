@@ -1,4 +1,4 @@
-import chalk from 'chalk';
+import colors from 'colors/safe';
 import dayjs from 'dayjs';
 
 /**
@@ -21,21 +21,21 @@ export default class Debugger {
 
     switch (type) {
       case 'success':
-        styledType = chalk.green.bold(styledType);
+        styledType = colors.bold(colors.green(styledType));
         break;
       case 'error':
-        styledType = chalk.red.bold(styledType);
+        styledType = colors.bold(colors.red(styledType));
         break;
       case 'warn':
-        styledType = chalk.yellow.bold(styledType);
+        styledType = colors.bold(colors.yellow(styledType));
         break;
       case 'info':
-        styledType = chalk.blue.bold(styledType);
+        styledType = colors.bold(colors.blue(styledType));
         break;
       default:
     }
 
-    const styledCategory = category ? chalk.italic(`[${category}]`) : '';
+    const styledCategory = category ? colors.italic(`[${category}]`) : '';
     const time = dayjs().format('DD-MM-YYYY HH:mm:ss');
 
     return `${styledType} ${styledCategory} [${time}] ${message}`;

@@ -1,11 +1,12 @@
 import 'dotenv/config';
 import TestAddon from './addon';
-import { Client } from '..';
+import { Client, Debugger } from '..';
 
 class TestClient extends Client {
   didReady() {
     this.load(TestAddon);
     console.log(this.options.owners);
+    Debugger.info('Hi!');
     this.user.setActivity('Tests ready!');
   }
 
