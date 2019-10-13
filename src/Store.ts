@@ -13,6 +13,7 @@ export interface FolderNames {
    * The folder that will be loaded for commands
    */
   commands?: string;
+
   /**
    * The folder that will be loaded for tasks
    */

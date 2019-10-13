@@ -10,10 +10,12 @@ interface DefaultClientOptions {
    * Whether the client should "type" while processing the command
    */
   typing: boolean;
+
   /**
    * The default prefix when the client first boots up
    */
   prefix: string;
+
   /**
    * Whether the client should start in debug mode
    */

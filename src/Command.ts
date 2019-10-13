@@ -201,7 +201,6 @@ export default class Command {
   /**
    * Invoked after the command is inhibited due to it being run in a non-nsfw channel
    * @param message The created message
-   * @param args The user arguments
    */
   didInhibitNSFW(message: Discord.Message) {
     message.channel.send('This command should only be sent in a NSFW channel');
@@ -210,7 +209,6 @@ export default class Command {
   /**
    * Invoked after the command is inhibited due to excess usage per user
    * @param message The created message
-   * @param args The user arguments
    */
   didInhibitLimit(message: Discord.Message) {
     const id = this.options.limit.scope === 'guild' ? message.guild.id : message.author.id;
@@ -222,7 +220,6 @@ export default class Command {
   /**
    * Invoked after the command is inhibited due to not enough permissions
    * @param message The created message
-   * @param args The user arguments
    */
   didInhibitPerm(message: Discord.Message) {
     message.channel.send('You are not allowed to run this command!');
@@ -231,17 +228,16 @@ export default class Command {
   /**
    * Whether the command should be dispatched
    * @param message The created message
-   * @param args The user arguments
    */
   willDispatch?(message: Discord.Message): Promise<void | boolean>;
 
   /**
    * Invoked when the user arguments don't meet the validation schema
    * @param message The created message
-   * @param results The validation results. Errors only.
+   * @param validationErrs The validation erros.
    */
-  didCatchValidationErrors(message: Discord.Message, results: ValidationErrors) {
-    Object.values(results).forEach(errs => {
+  didCatchValidationErrors(message: Discord.Message, validationErrs: ValidationErrors) {
+    Object.values(validationErrs).forEach(errs => {
       errs.forEach(err => {
         message.channel.send(err.message);
       });
@@ -331,7 +327,6 @@ export default class Command {
   /**
    * Whether the command should be inhibited due to excess usage
    * @param message The created message
-   * @param args The user arguments
    */
   shouldInhibitLimit(message: Discord.Message) {
     if (!this.options.limit.time) return false;

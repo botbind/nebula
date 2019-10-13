@@ -101,6 +101,7 @@ export interface ValidatorOptions {
    * Whether the validator should abort on the first error
    */
   abortEarly: boolean;
+
   /**
    * Whether the validator should return coerced values
    */
