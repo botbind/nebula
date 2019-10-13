@@ -146,7 +146,7 @@ export default class Dispatcher {
           return;
         }
 
-        validatedArgs = results;
+        validatedArgs = results as ValidationResults;
       }
 
       if (!command.didDispatch) return;
