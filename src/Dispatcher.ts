@@ -3,7 +3,8 @@ import Command from './Command';
 import Addon from './Addon';
 import Util from './Util';
 import NebulaError from './NebulaError';
-import { ValidationResults } from './Validator';
+import { ValidationResults, ValidationErrors } from './Validator';
+import ValidationError from './Validator/ValidationError';
 
 /**
  * The components of a commands, including 3 parts: prefix, name and arguments
@@ -125,7 +126,10 @@ export default class Dispatcher {
           );
 
         const results = this.addon.validator.validate(message, args, command.options.schema);
-        const errors = Util.entriesOf(results).filter(([, results]) => Util.isArray(results));
+        const errors = Util.entriesOf(results).filter(([, results]) => Util.isArray(results)) as [
+          string,
+          ValidationError[],
+        ][];
 
         if (errors.length) {
           command.didCatchValidationErrors(
@@ -136,7 +140,7 @@ export default class Dispatcher {
 
                 return res;
               },
-              {} as ValidationResults,
+              {} as ValidationErrors,
             ),
           );
           return;

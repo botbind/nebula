@@ -3,8 +3,7 @@ import merge from 'lodash.merge';
 import Addon from './Addon';
 import Util from './Util';
 import NebulaError from './NebulaError';
-import { Schema, ValidationResults } from './Validator';
-import ValidationError from './Validator/ValidationError';
+import { Schema, ValidationResults, ValidationErrors } from './Validator';
 import { Constructor, MakeOptsRequired } from './types';
 
 /**
@@ -190,7 +189,7 @@ export default class Command {
   /**
    * The instantiated subcommands of this command
    */
-  instantiatedSubcommands: Command[];
+  instantiatedSubcommands?: Command[];
 
   private _sweepInterval: NodeJS.Timeout | null;
 
@@ -241,9 +240,9 @@ export default class Command {
    * @param message The created message
    * @param results The validation results. Errors only.
    */
-  didCatchValidationErrors(message: Discord.Message, results: ValidationResults) {
+  didCatchValidationErrors(message: Discord.Message, results: ValidationErrors) {
     Object.values(results).forEach(errs => {
-      (errs as ValidationError[]).forEach(err => {
+      errs.forEach(err => {
         message.channel.send(err.message);
       });
     });

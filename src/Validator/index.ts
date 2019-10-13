@@ -70,10 +70,17 @@ export type ValidationRule<T extends Primitives = Primitives> = (
 ) => boolean;
 
 /**
- * The validated value store
+ * The validation errors
+ */
+export interface ValidationErrors {
+  [x: string]: ValidationError[];
+}
+
+/**
+ * The validation results
  */
 export interface ValidationResults {
-  [x: string]: ValidationError[] | Primitives | null;
+  [x: string]: Primitives | null;
 }
 
 /**
@@ -130,7 +137,11 @@ export default class Validator {
    * @param values The values to validate
    * @param schema The validation schema
    */
-  validate(message: Discord.Message, values: string[], schema: Schema): ValidationResults {
+  validate(
+    message: Discord.Message,
+    values: string[],
+    schema: Schema,
+  ): ValidationResults | ValidationErrors {
     const valueStore: ValueStore = {};
     const validatorEntries = Util.entriesOf(schema);
 
@@ -164,7 +175,7 @@ export default class Validator {
       };
     }
 
-    const results: ValidationResults = {};
+    const results: ValidationResults | ValidationErrors = {};
 
     for (let i = 0; i < validatorEntries.length; i++) {
       const [currKey, currValidator] = validatorEntries[i];
