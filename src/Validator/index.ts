@@ -94,24 +94,24 @@ export interface ValidationFlags {
 }
 
 /**
- * The options of the validator
+ * The optinal options passed as argument to the validator
  */
-export interface ValidatorOptions {
+export interface OptionalValidatorOptions {
   /**
    * Whether the validator should abort on the first error
    */
-  abortEarly: boolean;
+  abortEarly?: boolean;
 
   /**
    * Whether the validator should return coerced values
    */
-  coerce: boolean;
+  coerce?: boolean;
 }
 
 /**
- * The options passed as argument of the validator
+ * The options of the validator
  */
-export type ValidatorOptionsArg = Partial<ValidatorOptions>;
+export type ValidatorOptions = Required<OptionalValidatorOptions>;
 
 const defaultOptions: ValidatorOptions = {
   abortEarly: true,
@@ -125,7 +125,7 @@ export default class Validator {
    */
   readonly options: ValidatorOptions;
 
-  constructor(options: ValidatorOptionsArg = {}) {
+  constructor(options: OptionalValidatorOptions = {}) {
     if (!Util.isObject(options))
       throw new NebulaError('The options for Validator must be an object');
 
@@ -146,7 +146,7 @@ export default class Validator {
     const valueStore: ValueStore = {};
     const validatorEntries = Util.entriesOf(schema);
 
-    for (let i = 0; i < validatorEntries.length; i++) {
+    for (let i = 0; i < validatorEntries.length; i += 1) {
       const [currKey, currValidator] = validatorEntries[i];
       const currValue = values[i];
       const err = [new ValidationError(currValue, currKey, currValidator.type)];
@@ -178,7 +178,7 @@ export default class Validator {
 
     const results: ValidationResults | ValidationErrors = {};
 
-    for (let i = 0; i < validatorEntries.length; i++) {
+    for (let i = 0; i < validatorEntries.length; i += 1) {
       const [currKey, currValidator] = validatorEntries[i];
       const { value } = valueStore[currKey];
       const currRawValue = values[i];

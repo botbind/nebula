@@ -1,15 +1,17 @@
 {
   "compilerOptions": {
     "module": "commonjs",
-    "target": "es5",
+    "target": "es6",
     "lib": ["es6"],
     "moduleResolution": "node",
     "forceConsistentCasingInFileNames": true,
     "strict": true,
-    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
     "downlevelIteration": true,
     "noErrorTruncation": true,
-    "baseUrl": "."
+    "declaration": true,
+    "baseUrl": ".",
+    "outDir": "dist"
   },
   "exclude": ["node_modules", "dist"]
 }

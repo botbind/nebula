@@ -11,7 +11,7 @@ export default class BooleanValidator extends BaseValidator<boolean> {
     super('boolean');
   }
 
-  coerce(value: any) {
+  coerce(value: string) {
     if (truthyValues.includes(value)) return true;
     if (falsyValues.includes(value)) return false;
 

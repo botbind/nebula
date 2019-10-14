@@ -49,13 +49,16 @@ export default class Permissions extends Discord.Collection<number, PermissionCh
    * @param level The level of the permission
    * @param message The created message
    */
-  async checkCascadingly(level: number, message: Discord.Message) {
-    for (const [permissionLevel, check] of this.entries()) {
-      if (permissionLevel < level) continue;
+  async check(level: number, message: Discord.Message) {
+    for (const [permissionLevel, permissionCheck] of this.entries()) {
+      if (permissionLevel > level) {
+        // eslint-disable-next-line no-await-in-loop
+        const result = await permissionCheck(message);
 
-      const result = await check(message);
-
-      if (result) return true;
+        if (result) return true;
+      }
     }
+
+    return false;
   }
 }

@@ -6,7 +6,7 @@ import Command from './Command';
 import Task from './Task';
 import Util from './Util';
 import NebulaError from './NebulaError';
-import { Constructor, MakeOptsOptional } from './types';
+import { Constructor } from './types';
 
 export interface FolderNames {
   /**
@@ -21,34 +21,36 @@ export interface FolderNames {
 }
 
 /**
- * The options for the store
+ * The optional options passed as arguments to the store
  */
-export interface StoreOptions {
+export interface OptionalStoreOptions {
   /**
    * The base directory of the addon
    */
-  baseDir: string;
-
-  /**
-   * The folder names mapping
-   */
-  folderNames: Required<FolderNames>;
+  baseDir?: string;
 
   /**
    * Whether resource folders should be created if not exist
    */
-  createFoldersIfNotExisted: boolean;
+  createFoldersIfNotExisted?: boolean;
 
   /**
    * The folder whose name shouldn't be used as the group name
    */
-  ignoreGroupFolderName: string;
+  ignoreGroupFolderName?: string;
+
+  /**
+   * The folder names mapping
+   */
+  folderNames?: FolderNames;
 }
 
 /**
- * The options passed as argument for the store
+ * The options for the store
  */
-export type StoreOptionsArg = Partial<MakeOptsOptional<StoreOptions, 'folderNames'>>;
+export interface StoreOptions extends Required<OptionalStoreOptions> {
+  folderNames: Required<FolderNames>;
+}
 
 /**
  * Available and valid resource
@@ -56,7 +58,7 @@ export type StoreOptionsArg = Partial<MakeOptsOptional<StoreOptions, 'folderName
 export type Resource = Command & Task;
 
 /**
- * The info of the resources
+ * The information of a resource
  */
 export interface ResourceInfo {
   resource: Resource;
@@ -89,7 +91,7 @@ export default class Store extends Array<ResourceInfo> {
    * The store of all Nebula resources
    * @param addon The addon of the store
    */
-  constructor(addon: Addon, options: StoreOptionsArg = {}) {
+  constructor(addon: Addon, options: OptionalStoreOptions = {}) {
     if (!Util.isObject(options)) throw new NebulaError('The options for Store must be an object');
 
     super(0);
@@ -128,9 +130,10 @@ export default class Store extends Array<ResourceInfo> {
     });
   }
 
-  private _import(path: string, category: string, group: string) {
-    if (fs.lstatSync(path).isFile() && (path.endsWith('.js') || path.endsWith('.ts'))) {
-      const resourceReq = require(path);
+  private _import(dir: string, category: string, group: string) {
+    if (fs.lstatSync(dir).isFile() && (dir.endsWith('.js') || dir.endsWith('.ts'))) {
+      // eslint-disable-next-line import/no-dynamic-require, global-require, @typescript-eslint/no-var-requires
+      const resourceReq = require(dir);
 
       const Resource: Constructor<Resource> = resourceReq.default || resourceReq;
 

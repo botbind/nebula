@@ -6,7 +6,7 @@ class Util {
    * Check whether a value is a function
    * @param maybeFunction The value to check
    */
-  static isFunction(maybeFunction: any) {
+  static isFunction(maybeFunction: unknown) {
     return typeof maybeFunction === 'function';
   }
 
@@ -14,7 +14,7 @@ class Util {
    * Check whether a value is a plain object
    * @param maybeObject The value to check
    */
-  static isObject(maybeObject: any) {
+  static isObject(maybeObject: unknown) {
     return (
       typeof maybeObject === 'object' &&
       Object.prototype.toString.call(maybeObject) === '[object Object]'
@@ -25,7 +25,7 @@ class Util {
    * Check whether a value is an array
    * @param maybeArray The value to check
    */
-  static isArray(maybeArray: any) {
+  static isArray(maybeArray: unknown) {
     return Array.isArray(maybeArray);
   }
 
@@ -33,7 +33,7 @@ class Util {
    * Check whether a value is a number
    * @param maybeNumber The value to check
    */
-  static isNumber(maybeNumber: any) {
+  static isNumber(maybeNumber: unknown) {
     const coerce = Number(maybeNumber);
 
     return !Number.isNaN(coerce);

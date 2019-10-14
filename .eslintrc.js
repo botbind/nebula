@@ -5,51 +5,43 @@ module.exports = {
     node: true,
     jest: true,
   },
-  extends: ['plugin:import/recommended', 'airbnb-base', 'prettier'],
-  parser: 'babel-eslint',
+  extends: [
+    'plugin:@typescript-eslint/recommended',
+    'airbnb-base',
+    'prettier',
+    'prettier/@typescript-eslint',
+  ],
+  parser: '@typescript-eslint/parser',
   parserOptions: {
     ecmaVersion: 7,
     sourceType: 'module',
   },
-  plugins: ['babel'],
+  plugins: ['@typescript-eslint/eslint-plugin'],
   settings: {
     'import/resolver': {
       node: {
-        extensions: ['.js', '.ts', '.tsx'],
+        extensions: ['.ts'],
       },
     },
   },
   rules: {
-    'linebreak-style': 'off',
-
     'no-underscore-dangle': 'off',
-    'no-console': 'off',
-    'no-alert': 'error',
-    'no-constant-condition': 'error',
-
     'class-methods-use-this': 'off',
-    'no-restricted-syntax': 'off',
-    'no-param-reassign': 'off',
-    'no-prototype-builtins': 'off',
-
-    'prefer-destructuring': 'off',
-    'consistent-this': ['error', 'self'],
+    'no-console': 'off',
+    'no-restricted-syntax': 'off', // Allows for ... of usage
     'max-len': [
       'error',
       100,
       2,
       {
         ignoreUrls: true,
+        ignoreComments: true, // Allow JSDoc comments
+        ignoreRegExpLiterals: true,
+        ignoreStrings: true,
+        ignoreTemplateLiterals: true,
       },
-    ],
-    'import/no-extraneous-dependencies': 'off',
-    'import/namespace': ['error', { allowComputed: true }],
-    'import/order': [
-      'error',
-      {
-        groups: [['index', 'sibling', 'parent', 'internal', 'external', 'builtin']],
-        'newlines-between': 'never',
-      },
-    ],
+    ], // Prettier overrides max-len to off
+    '@typescript-eslint/explicit-function-return-type': 'off', // Conflicts with airbnb's no-useless-call
+    '@typescript-eslint/no-non-null-assertion': 'off',
   },
 };

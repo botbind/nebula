@@ -14,7 +14,7 @@ export default class NumberValidator extends BaseValidator<number> {
     super('number');
   }
 
-  coerce(value: any) {
+  coerce(value: string) {
     if (Util.isNumber(value)) return Number(value);
 
     return null;
@@ -125,7 +125,6 @@ export default class NumberValidator extends BaseValidator<number> {
 
     this.rules.push(({ value, rawValue, key, ref }) => {
       const entry = ref(refKey);
-
       if (!entry)
         throw new NebulaError(`The reference key for number.compare "${refKey}" not found`);
 

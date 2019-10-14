@@ -4,7 +4,7 @@ import Addon from './Addon';
 import Util from './Util';
 import NebulaError from './NebulaError';
 import { Schema, ValidationResults, ValidationErrors } from './Validator';
-import { Constructor, MakeOptsRequired } from './types';
+import { Constructor, RequiredExcept } from './types';
 
 /**
  * The limit scopes
@@ -61,53 +61,54 @@ export interface PermissionOptions {
   level: number;
 }
 
-interface DefaultCommandOptions {
-  /**
-   * The alias of the command
-   */
-  alias: string[];
-
-  /**
-   * The description of the command
-   */
-  description: string;
-
-  /**
-   * Whether the command is NSFW
-   */
-  nsfw: boolean;
-
-  /**
-   * Whether the command is a subcommand
-   */
-  isSubcommand: boolean;
-
-  /**
-   * The usage limit for the command
-   */
-  limit: LimitOptions;
-
-  /**
-   * The subcommands for the command
-   */
-  subcommands: SubcommandsOptions;
-
-  /**
-   * The permission options for the command
-   */
-  permission: PermissionOptions;
-
-  /**
-   * The required Discord permissions for the command
-   */
-  requiredPermissions: Discord.PermissionResolvable[];
-}
-
-interface RequiredCommandOptions {
+/**
+ * The optional options passed as arguments to the command
+ */
+export interface OptionalCommandOptions {
   /**
    * The name of the command
    */
   name: string;
+
+  /**
+   * The alias of the command
+   */
+  alias?: string[];
+
+  /**
+   * The description of the command
+   */
+  description?: string;
+
+  /**
+   * Whether the command is NSFW
+   */
+  nsfw?: boolean;
+
+  /**
+   * Whether the command is a subcommand
+   */
+  isSubcommand?: boolean;
+
+  /**
+   * The required Discord permissions for the command
+   */
+  requiredPermissions?: Discord.PermissionResolvable[];
+
+  /**
+   * The usage limit for the command
+   */
+  limit?: LimitOptions;
+
+  /**
+   * The subcommands for the command
+   */
+  subcommands?: SubcommandsOptions;
+
+  /**
+   * The permission options for the command
+   */
+  permission?: PermissionOptions;
 
   /**
    * The validation schema of the command
@@ -115,42 +116,35 @@ interface RequiredCommandOptions {
   schema?: Schema;
 }
 
-type EnhancedDefaultCommandOptions = MakeOptsRequired<
-  MakeOptsRequired<
-    MakeOptsRequired<DefaultCommandOptions, 'limit', 'bucket' | 'scope'>,
-    'subcommands',
-    'defaultToFirst'
-  >,
-  'permission',
-  'exact'
->;
-
 /**
  * The options for the command
  */
-export type CommandOptions = EnhancedDefaultCommandOptions & RequiredCommandOptions;
-
-/**
- * The options passed as argument for the command
- */
-export type CommandOptionsArg = Partial<DefaultCommandOptions> & RequiredCommandOptions;
+export interface CommandOptions extends RequiredExcept<OptionalCommandOptions, 'schema'> {
+  limit: Required<LimitOptions>;
+  subcommands: Required<SubcommandsOptions>;
+  permission: Required<PermissionOptions>;
+}
 
 const limitScopes = ['user', 'guild'];
 
-const defaultOptions: EnhancedDefaultCommandOptions = {
+const defaultOptions: CommandOptions = {
+  name: '',
   alias: [],
   description: '',
   nsfw: false,
   limit: {
     bucket: 1,
     scope: 'user',
+    time: 0,
   },
   subcommands: {
     defaultToFirst: false,
+    commands: [],
   },
   isSubcommand: false,
   permission: {
     exact: false,
+    level: 0,
   },
   requiredPermissions: [],
 };
@@ -189,7 +183,7 @@ export default class Command {
   /**
    * The instantiated subcommands of this command
    */
-  instantiatedSubcommands?: Command[];
+  instantiatedSubcommands: Command[];
 
   private _sweepInterval: NodeJS.Timeout | null;
 
@@ -212,7 +206,7 @@ export default class Command {
    */
   didInhibitLimit(message: Discord.Message) {
     const id = this.options.limit.scope === 'guild' ? message.guild.id : message.author.id;
-    const timeLeft = (this.options.limit.time! - (Date.now() - this.usage.get(id)![1])) / 1000;
+    const timeLeft = (this.options.limit.time - (Date.now() - this.usage.get(id)![1])) / 1000;
 
     message.channel.send(`You have ${timeLeft} seconds left before you can run this command again`);
   }
@@ -229,14 +223,14 @@ export default class Command {
    * Whether the command should be dispatched
    * @param message The created message
    */
-  willDispatch?(message: Discord.Message): Promise<void | boolean>;
+  async willDispatch?(message: Discord.Message): Promise<void | boolean>;
 
   /**
    * Invoked when the user arguments don't meet the validation schema
    * @param message The created message
    * @param validationErrs The validation erros.
    */
-  didCatchValidationErrors(message: Discord.Message, validationErrs: ValidationErrors) {
+  async didCatchValidationErrors(message: Discord.Message, validationErrs: ValidationErrors) {
     Object.values(validationErrs).forEach(errs => {
       errs.forEach(err => {
         message.channel.send(err.message);
@@ -249,28 +243,31 @@ export default class Command {
    * @param message The created message
    * @param args The user arguments
    */
-  didDispatch?(message: Discord.Message, args?: ValidationResults): Promise<void | boolean>;
+  async didDispatch?(message: Discord.Message, args?: ValidationResults): Promise<void | boolean>;
 
   /**
    * Invoked when the command is successfully dispatched
    * @param message The created message
    * @param args The user arguments
    */
-  didDispatchSuccessfully?(message: Discord.Message, args?: ValidationResults): Promise<void>;
+  async didDispatchSuccessfully?(message: Discord.Message, args?: ValidationResults): Promise<void>;
 
   /**
    * Invoked when the command fails
    * @param message The created message
    * @param args The user arguments
    */
-  didDispatchUnsuccessfully?(message: Discord.Message, args?: ValidationResults): Promise<void>;
+  async didDispatchUnsuccessfully?(
+    message: Discord.Message,
+    args?: ValidationResults,
+  ): Promise<void>;
 
   /**
    * The base class for all Nebula commands
    * @param client The client of the command
    * @param options The options of the command
    */
-  constructor(addon: Addon, options: CommandOptionsArg) {
+  constructor(addon: Addon, options: OptionalCommandOptions) {
     if (!Util.isObject(options)) throw new NebulaError('The options for Command must be an object');
 
     if (options.limit) {
@@ -310,18 +307,17 @@ export default class Command {
     this.usage = new Discord.Collection();
     this._sweepInterval = null;
 
-    if (this.options.subcommands.commands)
-      this.instantiatedSubcommands = this.options.subcommands.commands.map(Subcommand => {
-        if (!(Subcommand.prototype instanceof Command))
-          throw new NebulaError('subcommands must inherit the Command class');
+    this.instantiatedSubcommands = this.options.subcommands.commands.map(Subcommand => {
+      if (!(Subcommand.prototype instanceof Command))
+        throw new NebulaError('subcommands must inherit the Command class');
 
-        const subcommand = new Subcommand(this.addon);
+      const subcommand = new Subcommand(this.addon);
 
-        if (!subcommand.options.isSubcommand)
-          throw new NebulaError('subcommands must have isSubcommand set to true');
+      if (!subcommand.options.isSubcommand)
+        throw new NebulaError('subcommands must have isSubcommand set to true');
 
-        return new Subcommand(this.addon);
-      });
+      return new Subcommand(this.addon);
+    });
   }
 
   /**
@@ -342,7 +338,8 @@ export default class Command {
         this.usage.set(id, [1, currTime]);
 
         return false;
-      } else if (bucket === this.options.limit.bucket) return true;
+      }
+      if (bucket === this.options.limit.bucket) return true;
 
       this.usage.set(id, [bucket + 1, currTime]);
     } else {
@@ -357,7 +354,7 @@ export default class Command {
   private _sweep() {
     const currTime = Date.now();
 
-    this.usage.sweep(([, time]) => currTime - time > this.options.limit.time!);
+    this.usage.sweep(([, time]) => currTime - time > this.options.limit.time);
 
     if (!this.usage.size) {
       clearInterval(this._sweepInterval!);
@@ -381,14 +378,12 @@ export default class Command {
   async shouldInhibitPerm(message: Discord.Message) {
     const permissionLevel = this.options.permission.level;
 
-    if (permissionLevel != null) {
-      if (this.options.permission.exact) {
-        const result = await this.addon.permissions.checkExact(permissionLevel, message);
-        return !result;
-      }
-
-      const result = await this.addon.permissions.checkCascadingly(permissionLevel, message);
+    if (this.options.permission.exact) {
+      const result = await this.addon.permissions.checkExact(permissionLevel, message);
       return !result;
     }
+
+    const result = await this.addon.permissions.check(permissionLevel, message);
+    return !result;
   }
 }

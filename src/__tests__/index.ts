@@ -5,7 +5,6 @@ import { Client } from '..';
 class TestClient extends Client {
   didReady() {
     this.load(TestAddon);
-    console.log(this.options.owners);
     this.user.setActivity('Tests ready!');
   }
 

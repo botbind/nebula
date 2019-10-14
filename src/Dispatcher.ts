@@ -65,7 +65,7 @@ export default class Dispatcher {
     message: Discord.Message,
     args: string[],
   ) {
-    if (command.instantiatedSubcommands) {
+    if (command.instantiatedSubcommands.length) {
       const [subcommandName, ...rest] = args;
 
       if (!subcommandName) {
@@ -84,7 +84,9 @@ export default class Dispatcher {
       }
 
       const subcommand = command.instantiatedSubcommands.find(
-        command => command.name === subcommandName || command.alias.includes(subcommandName),
+        instantiatedSubcommand =>
+          instantiatedSubcommand.name === subcommandName ||
+          instantiatedSubcommand.alias.includes(subcommandName),
       );
 
       if (!subcommand) {
@@ -126,7 +128,7 @@ export default class Dispatcher {
           );
 
         const results = this.addon.validator.validate(message, args, command.options.schema);
-        const errors = Util.entriesOf(results).filter(([, results]) => Util.isArray(results)) as [
+        const errors = Util.entriesOf(results).filter(([, result]) => Util.isArray(result)) as [
           string,
           ValidationError[],
         ][];

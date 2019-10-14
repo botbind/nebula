@@ -1,35 +1,26 @@
-import Client from './Client';
-import Addon from './Addon';
-import Dispatcher from './Dispatcher';
-import Store from './Store';
-import Command from './Command';
-import Task from './Task';
-import Permissions from './Permissions';
-import NebulaError from './NebulaError';
-import Validator from './Validator';
-import BaseValidator from './Validator/BaseValidator';
-import BooleanValidator from './Validator/BooleanValidator';
-import NumberValidator from './Validator/NumberValidator';
-import StringValidator from './Validator/StringValidator';
-import ValidationError from './Validator/ValidationError';
-import Debugger from './Debugger';
-import Util from './Util';
-
-export {
-  Client,
-  Addon,
-  Store,
-  Dispatcher,
-  Command,
-  Task,
-  Permissions,
-  NebulaError,
-  Validator,
-  BaseValidator,
-  BooleanValidator,
-  NumberValidator,
-  StringValidator,
-  ValidationError,
-  Debugger,
-  Util,
-};
+export * from './Client';
+export { default as Client } from './Client';
+export * from './Addon';
+export { default as Addon } from './Addon';
+export * from './Dispatcher';
+export { default as Dispatcher } from './Dispatcher';
+export * from './Store';
+export { default as Store } from './Store';
+export * from './Command';
+export { default as Command } from './Command';
+export * from './Task';
+export { default as Task } from './Task';
+export * from './Permissions';
+export { default as Permissions } from './Permissions';
+export { default as NebulaError } from './NebulaError';
+export * from './Validator';
+export { default as Validator } from './Validator';
+export { default as BaseValidator } from './Validator/BaseValidator';
+export { default as BooleanValidator } from './Validator/BooleanValidator';
+export { default as NumberValidator } from './Validator/NumberValidator';
+export { default as StringValidator } from './Validator/StringValidator';
+export { default as ValidationError } from './Validator/ValidationError';
+export * from './Debugger';
+export { default as Debugger } from './Debugger';
+export { default as Util } from './Util';
+export * from './types';

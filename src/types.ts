@@ -1,12 +1,6 @@
 export interface Constructor<T> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   new (...args: any[]): T;
 }
 
-type Omit<T, K extends string | number | symbol> = { [P in Exclude<keyof T, K>]: T[P] };
-
-export type MakeRequired<T, O extends keyof T> = Partial<Omit<T, O>> & Required<Pick<T, O>>;
-
-export type MakeOptsOptional<T, K extends keyof T> = Omit<T, K> & Record<K, Partial<T[K]>>;
-
-export type MakeOptsRequired<T, K extends keyof T, O extends keyof T[K]> = Omit<T, K> &
-  Record<K, MakeRequired<T[K], O>>;
+export type RequiredExcept<T, K extends keyof T> = Required<Omit<T, K>> & Pick<T, K>;

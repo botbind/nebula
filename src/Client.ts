@@ -5,39 +5,39 @@ import NebulaAddon from './Addon';
 import NebulaError from './NebulaError';
 import { Constructor } from './types';
 
-interface DefaultClientOptions {
+interface BaseClientOptions {
   /**
    * Whether the client should "type" while processing the command
    */
-  typing: boolean;
+  typing?: boolean;
 
   /**
    * The default prefix when the client first boots up
    */
-  prefix: string;
+  prefix?: string;
 
   /**
    * Whether the client should start in debug mode
    */
-  debug: boolean;
+  debug?: boolean;
 
   /**
    * The discord ids for bot owners of the client
    */
-  owners: string[];
+  owners?: string[];
 }
-
-/**
- * The options for the client
- */
-export type ClientOptions = DefaultClientOptions & Discord.ClientOptions;
 
 /**
  * The options passed as argument for the client
  */
-export type ClientOptionsArg = Partial<DefaultClientOptions> & Discord.ClientOptions;
+export type OptionalClientOptions = BaseClientOptions & Discord.ClientOptions;
 
-const defaultOptions: DefaultClientOptions = {
+/**
+ * The options for the client
+ */
+export type ClientOptions = Required<BaseClientOptions> & Discord.ClientOptions;
+
+const defaultOptions: ClientOptions = {
   typing: false,
   prefix: '!',
   debug: false,
@@ -78,7 +78,7 @@ export default class Client extends Discord.Client {
    * The main hub for loading addons
    * @param options Options of the client
    */
-  constructor(options: ClientOptionsArg = {}) {
+  constructor(options: OptionalClientOptions = {}) {
     if (!Util.isObject(options)) throw new NebulaError('The options for Client must be an object');
 
     const mergedOptions = merge({}, defaultOptions, options);

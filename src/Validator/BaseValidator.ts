@@ -1,5 +1,5 @@
 import ValidationError from './ValidationError';
-import { ValidationRule, ValidationFlags, Primitives } from './';
+import { ValidationRule, ValidationFlags, Primitives } from ".";
 import NebulaError from '../NebulaError';
 
 export default abstract class BaseValidator<T extends Primitives> {
@@ -103,5 +103,5 @@ export default abstract class BaseValidator<T extends Primitives> {
    * Coerce a value
    * @param value The value to coerce from
    */
-  abstract coerce(value: any): Primitives | null;
+  abstract coerce(value: string): Primitives | null;
 }

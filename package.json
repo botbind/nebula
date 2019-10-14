@@ -15,34 +15,30 @@
   },
   "homepage": "https://github.com/botbind/nebula#readme",
   "scripts": {
-    "build": "rimraf dist && babel --extensions \".ts\" src -d dist && tsc -p tsconfig.build.json",
-    "test": "cross-env NODE_ENV=development nodemon -e ts --exec babel-node --extensions \".ts\" src/__tests__",
-    "lint": "eslint . --cache --report-unused-disable-directives && echo \"No errors found\"",
-    "lint:fix": "eslint . --cache --fix && echo \"No errors found\"",
-    "types:check": "tsc -p tsconfig.tc.json"
+    "build": "rimraf dist && tsc -p tsconfig.prod.json",
+    "test": "cross-env NODE_ENV=development nodemon -w \"src/**/*.ts\" --exec ts-node src/__tests__",
+    "lint": "eslint \"src/**/*.ts\" --report-unused-disable-directives && echo \"No errors found\"",
+    "lint:fix": "eslint \"src/**/*.ts\" --fix && echo \"No errors found\"",
+    "types:check": "tsc --noEmit"
   },
   "peerDependencies": {
     "discord.js": "latest"
   },
   "devDependencies": {
-    "@babel/cli": "^7.2.3",
-    "@babel/core": "^7.4.0",
-    "@babel/node": "^7.2.2",
-    "@babel/preset-env": "^7.4.2",
-    "@babel/preset-typescript": "^7.6.0",
     "@types/node": "^12.7.5",
-    "babel-eslint": "^10.0.1",
+    "@typescript-eslint/eslint-plugin": "^2.3.3",
+    "@typescript-eslint/parser": "^2.3.3",
     "cross-env": "^5.2.0",
     "discord.js": "^11.5.1",
     "dotenv": "^8.1.0",
     "eslint": "^5.16.0",
     "eslint-config-airbnb-base": "^13.1.0",
     "eslint-config-prettier": "^4.1.0",
-    "eslint-plugin-babel": "^5.3.0",
     "eslint-plugin-import": "^2.16.0",
     "nodemon": "^1.18.10",
     "rimraf": "^2.6.3",
-    "typescript": "^3.6.3"
+    "ts-node": "^8.4.1",
+    "typescript": "^3.6.4"
   },
   "dependencies": {
     "@types/lodash.merge": "^4.6.6",
