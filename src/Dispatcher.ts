@@ -96,28 +96,9 @@ export default class Dispatcher {
 
       this._dispatchCommandsRecursively(subcommand, message, rest);
     } else {
-      let willDispatch;
+      const shouldDispatch = await command.shouldDispatch(message);
 
-      if (command.willDispatch) willDispatch = await command.willDispatch(message);
-
-      if (willDispatch !== undefined && !willDispatch) return;
-
-      const shouldInhibitPerm = await command.shouldInhibitPerm(message);
-
-      if (shouldInhibitPerm) {
-        command.didInhibitPerm(message);
-        return;
-      }
-
-      if (command.shouldInhibitLimit(message)) {
-        command.didInhibitLimit(message);
-        return;
-      }
-
-      if (command.shouldInhibitNSFW(message)) {
-        command.didInhibitNSFW(message);
-        return;
-      }
+      if (!shouldDispatch) return;
 
       let validatedArgs;
 

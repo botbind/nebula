@@ -204,7 +204,7 @@ export default class Command {
    * Invoked after the command is inhibited due to excess usage per user
    * @param message The created message
    */
-  didInhibitLimit(message: Discord.Message) {
+  didInhibitUsage(message: Discord.Message) {
     const id = this.options.limit.scope === 'guild' ? message.guild.id : message.author.id;
     const timeLeft = (this.options.limit.time - (Date.now() - this.usage.get(id)![1])) / 1000;
 
@@ -220,12 +220,6 @@ export default class Command {
   }
 
   /**
-   * Whether the command should be dispatched
-   * @param message The created message
-   */
-  async willDispatch?(message: Discord.Message): Promise<void | boolean>;
-
-  /**
    * Invoked when the user arguments don't meet the validation schema
    * @param message The created message
    * @param validationErrs The validation erros.
@@ -237,6 +231,39 @@ export default class Command {
       });
     });
   }
+
+  async shouldDispatch(message: Discord.Message) {
+    let willDispatch;
+
+    if (this.willDispatch) willDispatch = await this.willDispatch(message);
+
+    if (willDispatch !== undefined && !willDispatch) return false;
+
+    if (!this.allowUsage(message)) {
+      this.didInhibitUsage(message);
+      return false;
+    }
+
+    if (!this.allowNSFW(message)) {
+      this.didInhibitNSFW(message);
+      return false;
+    }
+
+    const allowPerm = await this.allowPerm(message);
+
+    if (!allowPerm) {
+      this.didInhibitPerm(message);
+      return false;
+    }
+
+    return true;
+  }
+
+  /**
+   * Whether the command should be dispatched
+   * @param message The created message
+   */
+  async willDispatch?(message: Discord.Message): Promise<void | boolean>;
 
   /**
    * Invoked when the command is dispatched
@@ -321,11 +348,11 @@ export default class Command {
   }
 
   /**
-   * Whether the command should be inhibited due to excess usage
+   * Whether the command is allowed to dispatch considering the limit usage
    * @param message The created message
    */
-  shouldInhibitLimit(message: Discord.Message) {
-    if (!this.options.limit.time) return false;
+  allowUsage(message: Discord.Message) {
+    if (!this.options.limit.time) return true;
 
     const currTime = Date.now();
     const id = this.options.limit.scope === 'guild' ? message.guild.id : message.author.id;
@@ -337,9 +364,10 @@ export default class Command {
       if (currTime - time > this.options.limit.time) {
         this.usage.set(id, [1, currTime]);
 
-        return false;
+        return true;
       }
-      if (bucket === this.options.limit.bucket) return true;
+
+      if (bucket === this.options.limit.bucket) return false;
 
       this.usage.set(id, [bucket + 1, currTime]);
     } else {
@@ -348,7 +376,7 @@ export default class Command {
       if (!this._sweepInterval) this._sweepInterval = setInterval(this._sweep.bind(this), 30000);
     }
 
-    return false;
+    return true;
   }
 
   private _sweep() {
@@ -364,26 +392,23 @@ export default class Command {
   }
 
   /**
-   * Whether the command should be inhibited due to it being run in a non-nsfw channel
+   * Whether the command is allowed to run in a non-nsfw channel if marked nsfw
    * @param message The created message
    */
-  shouldInhibitNSFW(message: Discord.Message) {
-    return this.options.nsfw && !(message.channel as Discord.TextChannel).nsfw;
+  allowNSFW(message: Discord.Message) {
+    return !this.options.nsfw || (message.channel as Discord.TextChannel).nsfw;
   }
 
   /**
-   * Whether the command should be inhibited due to not enough permissions
+   * Whether the command is allowed to run considering the permission levels
    * @param message The created message
    */
-  async shouldInhibitPerm(message: Discord.Message) {
+  async allowPerm(message: Discord.Message) {
     const permissionLevel = this.options.permission.level;
 
-    if (this.options.permission.exact) {
-      const result = await this.addon.permissions.checkExact(permissionLevel, message);
-      return !result;
-    }
+    if (this.options.permission.exact)
+      return this.addon.permissions.checkExact(permissionLevel, message);
 
-    const result = await this.addon.permissions.check(permissionLevel, message);
-    return !result;
+    return this.addon.permissions.check(permissionLevel, message);
   }
 }
