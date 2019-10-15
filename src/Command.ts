@@ -232,6 +232,10 @@ export default class Command {
     });
   }
 
+  /**
+   * Whether the command should be dispatched. Override to change the order of inhibitors
+   * @param message The created message
+   */
   async shouldDispatch(message: Discord.Message) {
     let willDispatch;
 
@@ -392,7 +396,7 @@ export default class Command {
   }
 
   /**
-   * Whether the command is allowed to run in a non-nsfw channel if marked nsfw
+   * Whether the command is allowed to dispatch in a non-nsfw channel if marked nsfw
    * @param message The created message
    */
   allowNSFW(message: Discord.Message) {
@@ -400,7 +404,7 @@ export default class Command {
   }
 
   /**
-   * Whether the command is allowed to run considering the permission levels
+   * Whether the command is allowed to dispatch considering the permission levels
    * @param message The created message
    */
   async allowPerm(message: Discord.Message) {
