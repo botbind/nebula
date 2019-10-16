@@ -22,7 +22,7 @@
     "types:check": "tsc --noEmit && echo \"No errors found\""
   },
   "peerDependencies": {
-    "discord.js": "latest"
+    "discord.js": "^11.5.1"
   },
   "devDependencies": {
     "@types/node": "^12.7.5",
