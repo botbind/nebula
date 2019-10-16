@@ -11,11 +11,11 @@ export default class UserLimitCommand extends Command {
     });
   }
 
-  async willDispatch(message: Discord.Message) {
+  protected async willDispatch(message: Discord.Message) {
     message.channel.send('Test suites for user limit');
   }
 
-  async didDispatch(message: Discord.Message) {
+  public async didDispatch(message: Discord.Message) {
     message.channel.send(
       `You have ${this.options.limit.bucket -
         this.usage.get(message.author.id)![0]} time(s) left before cooling down. Scope: User`,

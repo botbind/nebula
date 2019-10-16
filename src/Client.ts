@@ -50,29 +50,29 @@ export default class Client extends Discord.Client {
   /**
    * The options of the client
    */
-  readonly options: ClientOptions;
+  public options: ClientOptions;
 
   /**
    * The application of the client
    */
-  app: Discord.OAuth2Application | null;
+  public app: Discord.OAuth2Application | null;
 
   /**
    * Invoked when the client becomes ready to start working
    */
-  didReady?(): void;
+  protected async didReady?(): Promise<void>;
 
   /**
    * Invoked when a message is created
    * @param message The created message
    */
-  didMessage?(message: Discord.Message): void;
+  protected async didMessage?(message: Discord.Message): Promise<void>;
 
   /**
    * Invoked when the client's WebSocket encounters a connection error
    * @param error The encountered error
    */
-  didCatchError?(err: Error): void;
+  protected async didCatchError?(err: Error): Promise<void>;
 
   /**
    * The main hub for loading addons
@@ -98,21 +98,11 @@ export default class Client extends Discord.Client {
       if (this.didReady) this.didReady();
     })
       .on('message', message => {
-        if (message.author.bot) return;
+        addons.forEach(addon => {
+          addon.dispatcher.dispatch(message);
+        });
 
         if (this.didMessage) this.didMessage(message);
-
-        addons.forEach(addon => {
-          const commandComponents = addon.dispatcher.parseCommand(message.content);
-
-          if (commandComponents[0] !== this.options.prefix) return;
-
-          if (this.options.typing) message.channel.startTyping();
-
-          addon.dispatcher.dispatch(message, commandComponents);
-
-          if (this.options.typing) message.channel.stopTyping();
-        });
       })
       .on('error', err => {
         if (this.didCatchError) this.didCatchError(err);
@@ -121,7 +111,7 @@ export default class Client extends Discord.Client {
 
   /**
    * Load and start an addon
-   * @param AddonToLoad The addon to load
+   * @param Addon The addon to load
    */
   protected load(Addon: Constructor<NebulaAddon>) {
     if (!(Addon.prototype instanceof NebulaAddon))
@@ -131,7 +121,6 @@ export default class Client extends Discord.Client {
 
     addons.push(addon);
 
-    addon.store.load();
     if (addon.didReady) addon.didReady();
 
     return this;

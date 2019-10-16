@@ -11,11 +11,11 @@ export default class PermissionCommand extends Command {
     });
   }
 
-  async willDispatch(message: Discord.Message) {
+  protected async willDispatch(message: Discord.Message) {
     message.channel.send('Test suites for permissions');
   }
 
-  async didDispatch(message: Discord.Message) {
+  public async didDispatch(message: Discord.Message) {
     message.channel.send('You are allowed to run this command');
   }
 }

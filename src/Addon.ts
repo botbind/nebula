@@ -42,42 +42,42 @@ export default abstract class Addon {
   /**
    * The client of the addon
    */
-  client: Client;
+  public client: Client;
 
   /**
    * The store of the addon
    */
-  store: NebulaStore;
+  public store: NebulaStore;
 
   /**
    * The dispatcher of the addon
    */
-  dispatcher: NebulaDispatcher;
+  public dispatcher: NebulaDispatcher;
 
   /**
    * The validator of the addon
    */
-  validator: NebulaValidator;
+  public validator: NebulaValidator;
 
   /**
    * The permissions of the addon
    */
-  permissions: NebulaPermissions;
+  public permissions: NebulaPermissions;
 
   /**
    * The name of the addon
    */
-  readonly name: string;
+  public name: string;
 
   /**
    * The options of the addon
    */
-  readonly options: AddonOptions;
+  public options: AddonOptions;
 
   /**
    * Invoked when the addon becomes ready to start working
    */
-  didReady?(): void;
+  public async didReady?(): Promise<void>;
 
   /**
    * The entry point of all Nebula resources
@@ -102,5 +102,8 @@ export default abstract class Addon {
     this.dispatcher = Dispatcher ? new Dispatcher(this) : new NebulaDispatcher(this);
     this.validator = Validator ? new Validator() : new NebulaValidator();
     this.permissions = Permission ? new Permission(this) : new NebulaPermissions(this);
+
+    // Has to be done after the addon has done loading other classes
+    this.store.load();
   }
 }

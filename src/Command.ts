@@ -158,22 +158,22 @@ export default class Command {
   /**
    * The name of the command
    */
-  readonly name: string;
+  public name: string;
 
   /**
    * The alias of the command
    */
-  readonly alias: string[];
+  public alias: string[];
 
   /**
    * The description of the command
    */
-  readonly description?: string;
+  public description?: string;
 
   /**
    * The options of the command
    */
-  readonly options: CommandOptions;
+  public options: CommandOptions;
 
   /**
    * The usage of the command
@@ -183,20 +183,20 @@ export default class Command {
   /**
    * The instantiated subcommands of this command
    */
-  instantiatedSubcommands: Command[];
+  public instantiatedSubcommands: Command[];
 
   private _sweepInterval: NodeJS.Timeout | null;
 
   /**
    * Invoked when the command becomes ready to start working
    */
-  didReady?(): void;
+  public async didReady?(): Promise<void>;
 
   /**
    * Invoked after the command is inhibited due to it being run in a non-nsfw channel
    * @param message The created message
    */
-  didInhibitNSFW(message: Discord.Message) {
+  protected async didInhibitNSFW(message: Discord.Message) {
     message.channel.send('This command should only be sent in a NSFW channel');
   }
 
@@ -204,7 +204,7 @@ export default class Command {
    * Invoked after the command is inhibited due to excess usage per user
    * @param message The created message
    */
-  didInhibitUsage(message: Discord.Message) {
+  protected async didInhibitUsage(message: Discord.Message) {
     const id = this.options.limit.scope === 'guild' ? message.guild.id : message.author.id;
     const timeLeft = (this.options.limit.time - (Date.now() - this.usage.get(id)![1])) / 1000;
 
@@ -215,7 +215,7 @@ export default class Command {
    * Invoked after the command is inhibited due to not enough permissions
    * @param message The created message
    */
-  didInhibitPerm(message: Discord.Message) {
+  protected async didInhibitPerm(message: Discord.Message) {
     message.channel.send('You are not allowed to run this command!');
   }
 
@@ -224,7 +224,10 @@ export default class Command {
    * @param message The created message
    * @param validationErrs The validation erros.
    */
-  async didCatchValidationErrors(message: Discord.Message, validationErrs: ValidationErrors) {
+  public async didCatchValidationErrors(
+    message: Discord.Message,
+    validationErrs: ValidationErrors,
+  ) {
     Object.values(validationErrs).forEach(errs => {
       errs.forEach(err => {
         message.channel.send(err.message);
@@ -236,19 +239,23 @@ export default class Command {
    * Whether the command should be dispatched. Override to change the order of inhibitors
    * @param message The created message
    */
-  async shouldDispatch(message: Discord.Message) {
+  public async shouldDispatch(message: Discord.Message) {
     let willDispatch;
 
     if (this.willDispatch) willDispatch = await this.willDispatch(message);
 
     if (willDispatch !== undefined && !willDispatch) return false;
 
-    if (!this.allowUsage(message)) {
+    const allowUsage = await this.allowUsage(message);
+
+    if (!allowUsage) {
       this.didInhibitUsage(message);
       return false;
     }
 
-    if (!this.allowNSFW(message)) {
+    const allowNSFW = await this.allowNSFW(message);
+
+    if (!allowNSFW) {
       this.didInhibitNSFW(message);
       return false;
     }
@@ -267,28 +274,34 @@ export default class Command {
    * Whether the command should be dispatched
    * @param message The created message
    */
-  async willDispatch?(message: Discord.Message): Promise<void | boolean>;
+  protected async willDispatch?(message: Discord.Message): Promise<void | boolean>;
 
   /**
    * Invoked when the command is dispatched
    * @param message The created message
    * @param args The user arguments
    */
-  async didDispatch?(message: Discord.Message, args?: ValidationResults): Promise<void | boolean>;
+  public async didDispatch?(
+    message: Discord.Message,
+    args?: ValidationResults,
+  ): Promise<void | boolean>;
 
   /**
    * Invoked when the command is successfully dispatched
    * @param message The created message
    * @param args The user arguments
    */
-  async didDispatchSuccessfully?(message: Discord.Message, args?: ValidationResults): Promise<void>;
+  public async didDispatchSuccessfully?(
+    message: Discord.Message,
+    args?: ValidationResults,
+  ): Promise<void>;
 
   /**
    * Invoked when the command fails
    * @param message The created message
    * @param args The user arguments
    */
-  async didDispatchUnsuccessfully?(
+  public async didDispatchUnsuccessfully?(
     message: Discord.Message,
     args?: ValidationResults,
   ): Promise<void>;
@@ -355,7 +368,7 @@ export default class Command {
    * Whether the command is allowed to dispatch considering the limit usage
    * @param message The created message
    */
-  allowUsage(message: Discord.Message) {
+  protected async allowUsage(message: Discord.Message) {
     if (!this.options.limit.time) return true;
 
     const currTime = Date.now();
@@ -399,7 +412,7 @@ export default class Command {
    * Whether the command is allowed to dispatch in a non-nsfw channel if marked nsfw
    * @param message The created message
    */
-  allowNSFW(message: Discord.Message) {
+  protected async allowNSFW(message: Discord.Message) {
     return !this.options.nsfw || (message.channel as Discord.TextChannel).nsfw;
   }
 
@@ -407,7 +420,7 @@ export default class Command {
    * Whether the command is allowed to dispatch considering the permission levels
    * @param message The created message
    */
-  async allowPerm(message: Discord.Message) {
+  protected async allowPerm(message: Discord.Message) {
     const permissionLevel = this.options.permission.level;
 
     if (this.options.permission.exact)

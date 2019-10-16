@@ -14,7 +14,7 @@ export default class NumberValidator extends BaseValidator<number> {
     super('number');
   }
 
-  coerce(value: string) {
+  public coerce(value: string) {
     if (Util.isNumber(value)) return Number(value);
 
     return null;
@@ -23,7 +23,7 @@ export default class NumberValidator extends BaseValidator<number> {
   /**
    * Check if a value is an integer
    */
-  integer() {
+  public integer() {
     this.rules.push(({ value, rawValue, key }) => {
       if (Number.isInteger(value)) return true;
 
@@ -39,7 +39,7 @@ export default class NumberValidator extends BaseValidator<number> {
    * Check if a value is greater than a minimum value
    * @param number The minimum value
    */
-  min(number: number) {
+  public min(number: number) {
     if (!Util.isNumber(number))
       throw new NebulaError('The minimum value for number.min must be a number');
 
@@ -58,7 +58,7 @@ export default class NumberValidator extends BaseValidator<number> {
    * Check if a value is smaller than a maximum value
    * @param number The maximum value
    */
-  max(number: number) {
+  public max(number: number) {
     if (!Util.isNumber(number))
       throw new NebulaError('The maximum value for number.max must be a number');
 
@@ -77,7 +77,7 @@ export default class NumberValidator extends BaseValidator<number> {
    * Check if a value is a multiple of a number
    * @param number The number to check against
    */
-  multiple(number: number) {
+  public multiple(number: number) {
     if (!Util.isNumber(number))
       throw new NebulaError('The multiple value for number.multiple must be a number');
 
@@ -96,7 +96,7 @@ export default class NumberValidator extends BaseValidator<number> {
    * Check if a value divides a number
    * @param number The number to check against
    */
-  divide(number: number) {
+  public divide(number: number) {
     if (!Util.isNumber(number))
       throw new NebulaError('The divide value for number.divide must be a number');
 
@@ -115,7 +115,7 @@ export default class NumberValidator extends BaseValidator<number> {
    * Compare a value is greater with another value inside the schema
    * @param refKey The reference key
    */
-  compare(refKey: string, direction: CompareDirections) {
+  public compare(refKey: string, direction: CompareDirections) {
     if (typeof refKey !== 'string')
       throw new NebulaError('The reference key for number.compare must be a string');
     if (!compareDirections.includes(direction))

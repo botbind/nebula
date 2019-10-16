@@ -16,10 +16,10 @@
   "homepage": "https://github.com/botbind/nebula#readme",
   "scripts": {
     "build": "rimraf dist && tsc -p tsconfig.prod.json",
-    "test": "cross-env NODE_ENV=development nodemon -w \"src/**/*.ts\" --exec ts-node src/__tests__",
+    "test": "cross-env NODE_ENV=development nodemon -e ts --exec ts-node src/__tests__",
     "lint": "eslint \"src/**/*.ts\" --report-unused-disable-directives && echo \"No errors found\"",
     "lint:fix": "eslint \"src/**/*.ts\" --fix && echo \"No errors found\"",
-    "types:check": "tsc --noEmit"
+    "types:check": "tsc --noEmit && echo \"No errors found\""
   },
   "peerDependencies": {
     "discord.js": "latest"

@@ -85,7 +85,7 @@ export default class Store extends Array<ResourceInfo> {
   /**
    * The options for the store
    */
-  readonly options: StoreOptions;
+  public options: StoreOptions;
 
   /**
    * The store of all Nebula resources
@@ -103,7 +103,7 @@ export default class Store extends Array<ResourceInfo> {
   /**
    * Load all the available and valid resources under the base directory
    */
-  load() {
+  public load() {
     Util.entriesOf(this.options.folderNames).forEach(([category, categoryAlias]) => {
       const categoryPath = path.resolve(this.options.baseDir, categoryAlias);
 
@@ -142,6 +142,8 @@ export default class Store extends Array<ResourceInfo> {
 
         // Do not load subcommands
         if (resource.options.isSubcommand) return;
+
+        if (resource.didReady) resource.didReady();
 
         this.push({
           resource,

@@ -109,7 +109,7 @@ export interface OptionalValidatorOptions {
 }
 
 /**
- * The options of the validator
+ * The options for the validator
  */
 export type ValidatorOptions = Required<OptionalValidatorOptions>;
 
@@ -120,10 +120,10 @@ const defaultOptions: ValidatorOptions = {
 
 export default class Validator {
   /**
-   *
+   * The options for the validator
    * @param options
    */
-  readonly options: ValidatorOptions;
+  public options: ValidatorOptions;
 
   constructor(options: OptionalValidatorOptions = {}) {
     if (!Util.isObject(options))
@@ -138,7 +138,7 @@ export default class Validator {
    * @param values The values to validate
    * @param schema The validation schema
    */
-  validate(
+  public validate(
     message: Discord.Message,
     values: string[],
     schema: Schema,
@@ -211,15 +211,15 @@ export default class Validator {
     return results;
   }
 
-  static boolean() {
+  public static boolean() {
     return new BooleanValidator();
   }
 
-  static number() {
+  public static number() {
     return new NumberValidator();
   }
 
-  static string() {
+  public static string() {
     return new StringValidator();
   }
 }

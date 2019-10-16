@@ -12,7 +12,7 @@ class Child3 extends Command {
     });
   }
 
-  async didDispatch(message: Discord.Message, { num }: ValidationResults) {
+  public async didDispatch(message: Discord.Message, { num }: ValidationResults) {
     message.channel.send(`This comes from child3. I accept arguments! ${num}`);
   }
 }
@@ -28,7 +28,7 @@ class Child1 extends Command {
     });
   }
 
-  async didDispatch(message: Discord.Message) {
+  public async didDispatch(message: Discord.Message) {
     message.channel.send('This comes from child1');
   }
 }
@@ -41,7 +41,7 @@ class Child2 extends Command {
     });
   }
 
-  async didDispatch(message: Discord.Message) {
+  public async didDispatch(message: Discord.Message) {
     message.channel.send('This comes from child2');
   }
 }

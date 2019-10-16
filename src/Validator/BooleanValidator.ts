@@ -11,7 +11,7 @@ export default class BooleanValidator extends BaseValidator<boolean> {
     super('boolean');
   }
 
-  coerce(value: string) {
+  public coerce(value: string) {
     if (truthyValues.includes(value)) return true;
     if (falsyValues.includes(value)) return false;
 
@@ -21,7 +21,7 @@ export default class BooleanValidator extends BaseValidator<boolean> {
   /**
    * Check if a value is truthy
    */
-  truthy() {
+  public truthy() {
     this.rules.push(({ value, rawValue, key }) => {
       if (value) return true;
 
@@ -36,7 +36,7 @@ export default class BooleanValidator extends BaseValidator<boolean> {
   /**
    * Check if a value is falsy
    */
-  falsy() {
+  public falsy() {
     this.rules.push(({ value, rawValue, key }) => {
       if (!value) return true;
 

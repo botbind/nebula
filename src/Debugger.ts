@@ -17,7 +17,7 @@ export default class Debugger {
    * @param type The log type
    * @param category The category of the message
    */
-  static interpolateMessage(message: string, type: LogTypes, category?: string) {
+  private static _interpolateMessage(message: string, type: LogTypes, category?: string) {
     let styledType = `[${type}]`;
 
     switch (type) {
@@ -47,8 +47,8 @@ export default class Debugger {
    * @param message The message to be printed
    * @param category The category of the message
    */
-  static info(message: any, category?: string) {
-    console.log(Debugger.interpolateMessage(message, 'info', category));
+  public static info(message: any, category?: string) {
+    console.log(Debugger._interpolateMessage(message, 'info', category));
   }
 
   /**
@@ -56,8 +56,8 @@ export default class Debugger {
    * @param message The message to be printed
    * @param category The category of the message
    */
-  static warn(message: any, category?: string) {
-    console.log(Debugger.interpolateMessage(message, 'warn', category));
+  public static warn(message: any, category?: string) {
+    console.log(Debugger._interpolateMessage(message, 'warn', category));
   }
 
   /**
@@ -65,8 +65,8 @@ export default class Debugger {
    * @param message The message to be printed
    * @param category The category of the message
    */
-  static error(message: any, category?: string) {
-    console.log(Debugger.interpolateMessage(message, 'error', category));
+  public static error(message: any, category?: string) {
+    console.log(Debugger._interpolateMessage(message, 'error', category));
   }
 
   /**
@@ -74,8 +74,8 @@ export default class Debugger {
    * @param message The message to be printed
    * @param category The category of the message
    */
-  static log(message: any, category?: string) {
-    console.log(Debugger.interpolateMessage(message, 'log', category));
+  public static log(message: any, category?: string) {
+    console.log(Debugger._interpolateMessage(message, 'log', category));
   }
 
   /**
@@ -83,7 +83,7 @@ export default class Debugger {
    * @param message The message to be printed
    * @param category The category of the message
    */
-  static success(message: any, category?: string) {
-    console.log(Debugger.interpolateMessage(message, 'success', category));
+  public static success(message: any, category?: string) {
+    console.log(Debugger._interpolateMessage(message, 'success', category));
   }
 }

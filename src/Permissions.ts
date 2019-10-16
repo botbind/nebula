@@ -34,7 +34,7 @@ export default class Permissions extends Discord.Collection<number, PermissionCh
    * @param level The level of the permission
    * @param message The created message
    */
-  async checkExact(level: number, message: Discord.Message) {
+  public async checkExact(level: number, message: Discord.Message) {
     const check = this.get(level);
 
     if (!check) throw new NebulaError(`Permission level ${level} not found`);
@@ -49,7 +49,7 @@ export default class Permissions extends Discord.Collection<number, PermissionCh
    * @param level The level of the permission
    * @param message The created message
    */
-  async check(level: number, message: Discord.Message) {
+  public async check(level: number, message: Discord.Message) {
     for (const [permissionLevel, permissionCheck] of this.entries()) {
       if (permissionLevel > level) {
         // eslint-disable-next-line no-await-in-loop

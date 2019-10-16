@@ -11,11 +11,11 @@ export default class ValidatorCommand extends Command {
     });
   }
 
-  async willDispatch(message: Discord.Message) {
+  protected async willDispatch(message: Discord.Message) {
     message.channel.send('Test suites for Validator');
   }
 
-  async didDispatch(message: Discord.Message, { mention }: ValidationResults) {
+  public async didDispatch(message: Discord.Message, { mention }: ValidationResults) {
     message.channel.send(`Mention: ${mention}`);
   }
 }

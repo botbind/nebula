@@ -1,27 +1,27 @@
 import ValidationError from './ValidationError';
-import { ValidationRule, ValidationFlags, Primitives } from ".";
+import { ValidationRule, ValidationFlags, Primitives } from '.';
 import NebulaError from '../NebulaError';
 
-export default abstract class BaseValidator<T extends Primitives> {
+export default class BaseValidator<T extends Primitives> {
   /**
    * The type of the validator
    */
-  readonly type: string;
+  public type: string;
 
   /**
    * The flags of the validator
    */
-  readonly flags: ValidationFlags;
+  public flags: ValidationFlags;
 
   /**
    * The rules of the validator
    */
-  readonly rules: ValidationRule<T>[];
+  public rules: ValidationRule<T>[];
 
   /**
    * The errors of the validator
    */
-  readonly errs: ValidationError[];
+  public errs: ValidationError[];
 
   /**
    * The base class for all Nebula validators
@@ -37,7 +37,7 @@ export default abstract class BaseValidator<T extends Primitives> {
   /**
    * Mark a value as optional
    */
-  optional() {
+  public optional() {
     this.flags.optional = true;
 
     return this;
@@ -47,7 +47,7 @@ export default abstract class BaseValidator<T extends Primitives> {
    * Check if a value is in a list of values
    * @param values The list of values
    */
-  in(...values: T[]) {
+  public in(...values: T[]) {
     if (!values.length)
       throw new NebulaError(`values for ${this.type}.in must have at least 1 value`);
 
@@ -66,7 +66,7 @@ export default abstract class BaseValidator<T extends Primitives> {
    * Check if a value is not in a list of values
    * @param values The list of values
    */
-  notIn(...values: T[]) {
+  public notIn(...values: T[]) {
     if (!values.length)
       throw new NebulaError(`values for ${this.type}.notIn must have at least 1 value`);
 
@@ -85,7 +85,7 @@ export default abstract class BaseValidator<T extends Primitives> {
    * Add a validation rule
    * @param rule The validation rule
    */
-  addRule(rule: ValidationRule<T>) {
+  public addRule(rule: ValidationRule<T>) {
     this.rules.push(rule);
   }
 
@@ -95,7 +95,7 @@ export default abstract class BaseValidator<T extends Primitives> {
    * @param key The key of the value in the value store
    * @param type The type of the rule
    */
-  addError(value: string, key: string, type: string) {
+  public addError(value: string, key: string, type: string) {
     this.errs.push(new ValidationError(value, key, type));
   }
 
@@ -103,5 +103,5 @@ export default abstract class BaseValidator<T extends Primitives> {
    * Coerce a value
    * @param value The value to coerce from
    */
-  abstract coerce(value: string): Primitives | null;
+  public coerce?(value: string): Primitives | null;
 }

@@ -20,7 +20,11 @@ export default class Dispatcher {
   /**
    * Invoked when the command name doesn't resolve to any commands
    */
-  didResolveCommandsUnsuccessfully(message: Discord.Message, name: string, parent?: string) {
+  protected async didResolveCommandsUnsuccessfully(
+    message: Discord.Message,
+    name: string,
+    parent?: string,
+  ) {
     message.channel.send(
       `Cannot find command "${name}" from ${this.addon.name} ${
         parent ? `of parent ${parent}` : ''
@@ -40,8 +44,10 @@ export default class Dispatcher {
    * Dispatch commands based on messages.
    * @param message The created message
    */
-  async dispatch(message: Discord.Message, commandComponents: CommandComponents) {
-    const [, commandName, commandArgs] = commandComponents;
+  public async dispatch(message: Discord.Message) {
+    const [commandPrefix, commandName, commandArgs] = this.parseCommand(message.content);
+
+    if (commandPrefix !== this.addon.client.options.prefix || message.author.bot) return;
 
     // We allow multiple commands to be ran at the same time
     const commands = this.addon.store.filter(
@@ -56,8 +62,12 @@ export default class Dispatcher {
       return;
     }
 
+    if (this.addon.client.options.typing) message.channel.startTyping();
+
     for (const { resource } of commands)
       this._dispatchCommandsRecursively(resource, message, commandArgs);
+
+    if (this.addon.client.options.typing) message.channel.stopTyping();
   }
 
   private async _dispatchCommandsRecursively(
@@ -150,7 +160,7 @@ export default class Dispatcher {
    * Parse a message content and return the command prefix, name and arguments
    * @param content The message content
    */
-  parseCommand(content: string): CommandComponents {
+  public parseCommand(content: string): CommandComponents {
     const [commandName, ...commandArgs] = content
       .substring(1, content.length)
       .trim()

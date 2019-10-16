@@ -6,7 +6,7 @@ class Util {
    * Check whether a value is a function
    * @param maybeFunction The value to check
    */
-  static isFunction(maybeFunction: unknown) {
+  public static isFunction(maybeFunction: unknown) {
     return typeof maybeFunction === 'function';
   }
 
@@ -14,7 +14,7 @@ class Util {
    * Check whether a value is a plain object
    * @param maybeObject The value to check
    */
-  static isObject(maybeObject: unknown) {
+  public static isObject(maybeObject: unknown) {
     return (
       typeof maybeObject === 'object' &&
       Object.prototype.toString.call(maybeObject) === '[object Object]'
@@ -25,7 +25,7 @@ class Util {
    * Check whether a value is an array
    * @param maybeArray The value to check
    */
-  static isArray(maybeArray: unknown) {
+  public static isArray(maybeArray: unknown) {
     return Array.isArray(maybeArray);
   }
 
@@ -33,7 +33,7 @@ class Util {
    * Check whether a value is a number
    * @param maybeNumber The value to check
    */
-  static isNumber(maybeNumber: unknown) {
+  public static isNumber(maybeNumber: unknown) {
     const coerce = Number(maybeNumber);
 
     return !Number.isNaN(coerce);
@@ -46,7 +46,7 @@ class Util {
    * Returns an array of key/values of the enumerable properties of an object
    * @param obj The object that contains the properties and methods
    */
-  static entriesOf<T>(obj: T) {
+  public static entriesOf<T>(obj: T) {
     return Object.entries(obj) as [Extract<keyof T, string>, T[keyof T]][];
   }
 }
