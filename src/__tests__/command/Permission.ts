@@ -11,7 +11,7 @@ export default class PermissionCommand extends Command {
     });
   }
 
-  protected async willDispatch(message: Discord.Message) {
+  public async willDispatch(message: Discord.Message) {
     message.channel.send('Test suites for permissions');
   }
 
