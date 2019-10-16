@@ -216,7 +216,7 @@ export default class Command {
    * @param message The created message
    */
   protected async didInhibitPerm(message: Discord.Message) {
-    message.channel.send('You are not allowed to run this command!');
+    return message.channel.send('You are not allowed to run this command!');
   }
 
   /**
@@ -236,45 +236,16 @@ export default class Command {
   }
 
   /**
-   * Whether the command should be dispatched. Override to change the order of inhibitors
+   * Invoked when the command before the command is processed
    * @param message The created message
    */
-  public async shouldDispatch(message: Discord.Message) {
-    let willDispatch;
-
-    if (this.willDispatch) willDispatch = await this.willDispatch(message);
-
-    if (willDispatch !== undefined && !willDispatch) return false;
-
-    const allowUsage = await this.allowUsage(message);
-
-    if (!allowUsage) {
-      this.didInhibitUsage(message);
-      return false;
-    }
-
-    const allowNSFW = await this.allowNSFW(message);
-
-    if (!allowNSFW) {
-      this.didInhibitNSFW(message);
-      return false;
-    }
-
-    const allowPerm = await this.allowPerm(message);
-
-    if (!allowPerm) {
-      this.didInhibitPerm(message);
-      return false;
-    }
-
-    return true;
-  }
+  public async willDispatch?(message: Discord.Message): Promise<void>;
 
   /**
    * Whether the command should be dispatched
    * @param message The created message
    */
-  protected async willDispatch?(message: Discord.Message): Promise<void | boolean>;
+  public async shouldDispatch?(message: Discord.Message): Promise<boolean>;
 
   /**
    * Invoked when the command is dispatched
@@ -284,7 +255,7 @@ export default class Command {
   public async didDispatch?(
     message: Discord.Message,
     args?: ValidationResults,
-  ): Promise<void | boolean>;
+  ): Promise<void | boolean | Error>;
 
   /**
    * Invoked when the command is successfully dispatched
@@ -305,6 +276,44 @@ export default class Command {
     message: Discord.Message,
     args?: ValidationResults,
   ): Promise<void>;
+
+  /**
+   * Compose the inhibitors and run shouldDispatch under the hood
+   * @param message The created message
+   */
+  public async composeInhibitors(message: Discord.Message) {
+    let shouldDispatch = true;
+
+    if (this.shouldDispatch) shouldDispatch = await this.shouldDispatch(message);
+
+    if (!shouldDispatch) return false;
+
+    const allowUsage = await this.allowUsage(message);
+
+    if (!allowUsage) {
+      this.didInhibitUsage(message);
+
+      return false;
+    }
+
+    const allowNSFW = await this.allowNSFW(message);
+
+    if (!allowNSFW) {
+      this.didInhibitNSFW(message);
+
+      return false;
+    }
+
+    const allowPerm = await this.allowPerm(message);
+
+    if (!allowPerm) {
+      this.didInhibitPerm(message);
+
+      return false;
+    }
+
+    return true;
+  }
 
   /**
    * The base class for all Nebula commands

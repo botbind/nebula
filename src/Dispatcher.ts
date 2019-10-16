@@ -106,7 +106,9 @@ export default class Dispatcher {
 
       this._dispatchCommandsRecursively(subcommand, message, rest);
     } else {
-      const shouldDispatch = await command.shouldDispatch(message);
+      if (command.willDispatch) command.willDispatch(message);
+
+      const shouldDispatch = await command.composeInhibitors(message);
 
       if (!shouldDispatch) return;
 
@@ -144,9 +146,17 @@ export default class Dispatcher {
 
       if (!command.didDispatch) return;
 
-      const isSuccessfullyDispatched = await command.didDispatch(message, validatedArgs);
+      let isSuccessfullyDispatched = true;
+      try {
+        const dispatchResult = await command.didDispatch(message, validatedArgs);
 
-      if (isSuccessfullyDispatched !== undefined && !isSuccessfullyDispatched) {
+        if (dispatchResult instanceof Error || (dispatchResult !== undefined && !dispatchResult))
+          isSuccessfullyDispatched = false;
+      } catch (err) {
+        isSuccessfullyDispatched = false;
+      }
+
+      if (!isSuccessfullyDispatched) {
         if (command.didDispatchUnsuccessfully)
           command.didDispatchUnsuccessfully(message, validatedArgs);
         return;
