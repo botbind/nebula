@@ -40,7 +40,7 @@ export type ClientOptions = Required<BaseClientOptions> & Discord.ClientOptions;
 const defaultOptions: ClientOptions = {
   typing: false,
   prefix: '!',
-  debug: false,
+  debug: process.env.NODE_ENV === 'development',
   owners: [],
 };
 
