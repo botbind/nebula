@@ -1,22 +1,9 @@
-import { Client, Addon, Store } from '..';
-
-class TestStore extends Store {
-  constructor(addon: Addon) {
-    super(addon, {
-      baseDir: __dirname,
-      folderNames: {
-        commands: 'command',
-        tasks: 'scheduledTasks',
-      },
-    });
-  }
-}
+import { Client, Addon } from '..';
 
 export default class TestAddon extends Addon {
   constructor(client: Client) {
     super(client, {
       name: 'test-addon',
-      store: TestStore,
     });
   }
 }
