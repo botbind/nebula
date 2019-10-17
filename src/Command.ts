@@ -316,15 +316,18 @@ export default class Command {
   }
 
   /**
-   * The base class for all Nebula commands
+   * The base structure for all Nebula commands
    * @param client The client of the command
    * @param options The options of the command
    */
   constructor(addon: Addon, options: OptionalCommandOptions) {
-    if (!Util.isObject(options)) throw new NebulaError('The options for Command must be an object');
+    if (!Util.isObject(options))
+      throw new NebulaError('The options for the command must be an object');
 
-    if (options.limit) {
-      if (options.limit.scope && !limitScopes.includes(options.limit.scope))
+    if (options.name == null) throw new NebulaError('The name of the command must be specified');
+
+    if (options.limit != null) {
+      if (options.limit.scope != null && !limitScopes.includes(options.limit.scope))
         throw new NebulaError('The limit scope must be either user or guild');
 
       if (options.limit.bucket != null && options.limit.bucket <= 0)
@@ -339,12 +342,12 @@ export default class Command {
     }
 
     if (
-      options.subcommands &&
+      options.subcommands != null &&
       (!options.subcommands.commands || !options.subcommands.commands.length)
     )
       throw new NebulaError('The commands for subcommands options must have at least a command');
 
-    if (options.permission && options.permission.level == null)
+    if (options.permission != null && options.permission.level == null)
       throw new NebulaError(
         'The permission level must be specified when permission options are specified',
       );
@@ -362,7 +365,7 @@ export default class Command {
 
     this.instantiatedSubcommands = this.options.subcommands.commands.map(Subcommand => {
       if (!(Subcommand.prototype instanceof Command))
-        throw new NebulaError('subcommands must inherit the Command class');
+        throw new NebulaError('subcommands must inherit the Command structure');
 
       const subcommand = new Subcommand(this.addon);
 

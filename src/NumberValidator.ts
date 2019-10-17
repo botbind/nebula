@@ -1,6 +1,6 @@
 import BaseValidator from './BaseValidator';
-import Util from '../Util';
-import NebulaError from '../NebulaError';
+import Util from './Util';
+import NebulaError from './NebulaError';
 
 type CompareDirections = 'greater' | 'smaller' | 'equal' | 'greaterOrEqual' | 'smallerOrEqual';
 

@@ -1,5 +1,7 @@
 import Client from './Client';
-import NebulaStore from './Store';
+import NebulaCommandStore from './CommandStore';
+import NebulaTaskStore from './TaskStore';
+import NebulaMonitorStore from './MonitorStore';
 import NebulaDispatcher from './Dispatcher';
 import Util from './Util';
 import NebulaPermissions from './Permissions';
@@ -23,9 +25,19 @@ export interface AddonOptions {
   validator?: Constructor<NebulaValidator>;
 
   /**
-   * The customised instance of Store
+   * The customised instance of CommandStore
    */
-  store?: Constructor<NebulaStore>;
+  commandStore?: Constructor<NebulaCommandStore>;
+
+  /**
+   * The customised instance of TaskStore
+   */
+  taskStore?: Constructor<NebulaTaskStore>;
+
+  /**
+   * The customised instance of MonitorStore
+   */
+  monitorStore?: Constructor<NebulaMonitorStore>;
 
   /**
    * The customised instance of dispatcher
@@ -45,9 +57,19 @@ export default abstract class Addon {
   public client: Client;
 
   /**
-   * The store of the addon
+   * The command store of the addon
    */
-  public store: NebulaStore;
+  public commandStore: NebulaCommandStore;
+
+  /**
+   * The task store of the addon
+   */
+  public taskStore: NebulaTaskStore;
+
+  /**
+   * The monitor store of the addon
+   */
+  public monitorStore: NebulaMonitorStore;
 
   /**
    * The dispatcher of the addon
@@ -85,11 +107,16 @@ export default abstract class Addon {
    * @param options The options of the addon
    */
   constructor(client: Client, options: AddonOptions) {
-    if (!Util.isObject(options)) throw new NebulaError('The options for Addon must be an object');
+    if (!Util.isObject(options))
+      throw new NebulaError('The options for the addon must be an object');
+
+    if (options.name == null) throw new NebulaError('The name of the addon must be specified');
 
     const {
       name,
-      store: Store,
+      commandStore: CommandStore,
+      taskStore: TaskStore,
+      monitorStore: MonitorStore,
       dispatcher: Dispatcher,
       validator: Validator,
       permissions: Permission,
@@ -98,12 +125,18 @@ export default abstract class Addon {
     this.client = client;
     this.name = name;
     this.options = options;
-    this.store = Store ? new Store(this) : new NebulaStore(this);
+    this.commandStore =
+      CommandStore != null ? new CommandStore(this) : new NebulaCommandStore(this);
+    this.taskStore = TaskStore != null ? new TaskStore(this) : new NebulaTaskStore(this);
+    this.monitorStore =
+      MonitorStore != null ? new MonitorStore(this) : new NebulaMonitorStore(this);
     this.dispatcher = Dispatcher ? new Dispatcher(this) : new NebulaDispatcher(this);
     this.validator = Validator ? new Validator() : new NebulaValidator();
     this.permissions = Permission ? new Permission(this) : new NebulaPermissions(this);
 
-    // Has to be done after the addon has done loading other classes
-    this.store.load();
+    // Has to be done after the addon has done loading other structures
+    this.commandStore.load();
+    this.taskStore.load();
+    this.monitorStore.load();
   }
 }

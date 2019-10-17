@@ -1,6 +1,6 @@
 import ValidationError from './ValidationError';
-import { ValidationRule, ValidationFlags, Primitives } from '.';
-import NebulaError from '../NebulaError';
+import { ValidationRule, ValidationFlags, Primitives } from './Validator';
+import NebulaError from './NebulaError';
 
 export default class BaseValidator<T extends Primitives> {
   /**
@@ -24,7 +24,7 @@ export default class BaseValidator<T extends Primitives> {
   public errs: ValidationError[];
 
   /**
-   * The base class for all Nebula validators
+   * The base structure for all Nebula validators
    * @param type The type of the validator
    */
   constructor(type: string) {

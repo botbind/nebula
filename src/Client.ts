@@ -79,7 +79,8 @@ export default class Client extends Discord.Client {
    * @param options Options of the client
    */
   constructor(options: OptionalClientOptions = {}) {
-    if (!Util.isObject(options)) throw new NebulaError('The options for Client must be an object');
+    if (!Util.isObject(options))
+      throw new NebulaError('The options for the client must be an object');
 
     const mergedOptions = merge({}, defaultOptions, options);
 
@@ -115,7 +116,7 @@ export default class Client extends Discord.Client {
    */
   protected load(Addon: Constructor<NebulaAddon>) {
     if (!(Addon.prototype instanceof NebulaAddon))
-      throw new NebulaError('The addon to be loaded must inherit the Addon class');
+      throw new NebulaError('The addon to be loaded must inherit the Addon structure');
 
     const addon = new Addon(this);
 

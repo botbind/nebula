@@ -1,6 +1,6 @@
 import BaseValidator from './BaseValidator';
-import Util from '../Util';
-import NebulaError from '../NebulaError';
+import Util from './Util';
+import NebulaError from './NebulaError';
 
 export default class StringValidator extends BaseValidator<string> {
   /**

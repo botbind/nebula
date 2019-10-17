@@ -4,7 +4,7 @@ import Addon from './Addon';
 import Util from './Util';
 import NebulaError from './NebulaError';
 import { ValidationResults, ValidationErrors } from './Validator';
-import ValidationError from './Validator/ValidationError';
+import ValidationError from './ValidationError';
 
 /**
  * The components of a commands, including 3 parts: prefix, name and arguments
@@ -50,10 +50,8 @@ export default class Dispatcher {
     if (commandPrefix !== this.addon.client.options.prefix || message.author.bot) return;
 
     // We allow multiple commands to be ran at the same time
-    const commands = this.addon.store.filter(
-      ({ category, resource }) =>
-        category === 'commands' &&
-        (resource.name === commandName || resource.alias.includes(commandName)),
+    const commands = this.addon.commandStore.filter(
+      ({ resource }) => resource.name === commandName || resource.alias.includes(commandName),
     );
 
     if (!commands.length) {

@@ -1,4 +1,4 @@
-import NebulaError from '../NebulaError';
+import NebulaError from './NebulaError';
 
 export default class ValidationError extends NebulaError {
   /**

@@ -4,8 +4,8 @@ import BooleanValidator from './BooleanValidator';
 import NumberValidator from './NumberValidator';
 import StringValidator from './StringValidator';
 import ValidationError from './ValidationError';
-import NebulaError from '../NebulaError';
-import Util from '../Util';
+import NebulaError from './NebulaError';
+import Util from './Util';
 
 /**
  * The allowed command argument types
@@ -127,7 +127,7 @@ export default class Validator {
 
   constructor(options: OptionalValidatorOptions = {}) {
     if (!Util.isObject(options))
-      throw new NebulaError('The options for Validator must be an object');
+      throw new NebulaError('The options for the validator must be an object');
 
     this.options = merge({}, defaultOptions, options);
   }

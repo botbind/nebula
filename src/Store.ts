@@ -4,21 +4,12 @@ import merge from 'lodash.merge';
 import Addon from './Addon';
 import Command from './Command';
 import Task from './Task';
+import Monitor from './Monitor';
 import Util from './Util';
 import NebulaError from './NebulaError';
 import { Constructor } from './types';
 
-export interface FolderNames {
-  /**
-   * The folder that will be loaded for commands
-   */
-  commands?: string;
-
-  /**
-   * The folder that will be loaded for tasks
-   */
-  tasks?: string;
-}
+export type StoreTypes = 'commands' | 'tasks' | 'monitors';
 
 /**
  * The optional options passed as arguments to the store
@@ -40,40 +31,49 @@ export interface OptionalStoreOptions {
   ignoreGroupFolderName?: string;
 
   /**
-   * The folder names mapping
+   * The name of the folder containing the resources
    */
-  folderNames?: FolderNames;
+  folderName: string;
+
+  /**
+   * The type of the store
+   */
+  type: StoreTypes;
 }
 
 /**
  * The options for the store
  */
-export interface StoreOptions extends Required<OptionalStoreOptions> {
-  folderNames: Required<FolderNames>;
-}
+export type StoreOptions = Required<OptionalStoreOptions>;
 
 /**
  * Available and valid resource
  */
-export type Resource = Command & Task;
+export type Resource = Command & Task & Monitor;
 
 /**
  * The information of a resource
  */
 export interface ResourceInfo {
+  /**
+   * The resource
+   */
   resource: Resource;
+
+  /**
+   * The group of the resource
+   */
   group: string;
-  category: string;
 }
+
+const storeTypes = ['commands', 'tasks', 'monitors'];
 
 const defaultOptions: StoreOptions = {
   baseDir: process.cwd(),
-  folderNames: {
-    commands: 'commands',
-    tasks: 'tasks',
-  },
   createFoldersIfNotExisted: true,
   ignoreGroupFolderName: 'ignore',
+  folderName: '',
+  type: 'commands',
 };
 
 export default class Store extends Array<ResourceInfo> {
@@ -90,9 +90,19 @@ export default class Store extends Array<ResourceInfo> {
   /**
    * The store of all Nebula resources
    * @param addon The addon of the store
+   * @param options The options for the store
    */
-  constructor(addon: Addon, options: OptionalStoreOptions = {}) {
-    if (!Util.isObject(options)) throw new NebulaError('The options for Store must be an object');
+  constructor(addon: Addon, options: OptionalStoreOptions) {
+    if (!Util.isObject(options))
+      throw new NebulaError('The options for the store must be an object');
+
+    if (options.folderName == null)
+      throw new Error('The folder name for the store must be specified');
+
+    if (options.type == null) throw new Error('The type of the store must be specified');
+
+    if (!storeTypes.includes(options.type))
+      throw new Error('The type of the store must be commands, tasks or monitors');
 
     super(0);
 
@@ -104,53 +114,61 @@ export default class Store extends Array<ResourceInfo> {
    * Load all the available and valid resources under the base directory
    */
   public load() {
-    Util.entriesOf(this.options.folderNames).forEach(([category, categoryAlias]) => {
-      const categoryPath = path.resolve(this.options.baseDir, categoryAlias);
+    const typePath = path.resolve(this.options.baseDir, this.options.folderName);
 
-      if (!fs.existsSync(categoryPath) && this.options.createFoldersIfNotExisted)
-        fs.mkdirSync(categoryPath);
+    if (!fs.existsSync(typePath) && this.options.createFoldersIfNotExisted) fs.mkdirSync(typePath);
 
-      fs.readdirSync(categoryPath).forEach(groupName => {
-        const groupPath = path.resolve(categoryPath, groupName);
+    fs.readdirSync(typePath).forEach(groupName => {
+      const groupPath = path.resolve(typePath, groupName);
 
-        if (fs.lstatSync(groupPath).isDirectory()) {
-          const actualGroupName =
-            groupName === this.options.ignoreGroupFolderName ? 'nebula-ignore' : groupName;
+      if (fs.lstatSync(groupPath).isDirectory()) {
+        const actualGroupName =
+          groupName === this.options.ignoreGroupFolderName ? 'nebula-ignore' : groupName;
 
-          fs.readdirSync(groupPath).forEach(resourceName => {
-            const resourcePath = path.resolve(groupPath, resourceName);
+        fs.readdirSync(groupPath).forEach(resourceName => {
+          const resourcePath = path.resolve(groupPath, resourceName);
 
-            this._import(resourcePath, category, actualGroupName);
-          });
-          return;
-        }
+          this._import(resourcePath, actualGroupName);
+        });
+        return;
+      }
 
-        this._import(groupPath, category, 'nebula-ignore');
-      });
+      this._import(groupPath, 'nebula-ignore');
     });
   }
 
-  private _import(dir: string, category: string, group: string) {
+  private _import(dir: string, group: string) {
     if (fs.lstatSync(dir).isFile() && (dir.endsWith('.js') || dir.endsWith('.ts'))) {
       // eslint-disable-next-line import/no-dynamic-require, global-require, @typescript-eslint/no-var-requires
       const resourceReq = require(dir);
 
       const Resource: Constructor<Resource> = resourceReq.default || resourceReq;
 
-      if (Resource.prototype instanceof Command || Resource.prototype instanceof Task) {
-        const resource = new Resource(this.addon);
+      let condition = Resource.prototype instanceof Command;
 
-        // Do not load subcommands
-        if (resource.options.isSubcommand) return;
-
-        if (resource.didReady) resource.didReady();
-
-        this.push({
-          resource,
-          category,
-          group,
-        });
+      switch (this.options.type) {
+        case 'tasks':
+          condition = Resource.prototype instanceof Task;
+          break;
+        case 'monitors':
+          condition = Resource.prototype instanceof Monitor;
+          break;
+        default:
       }
+
+      if (!condition) return;
+
+      const resource = new Resource(this.addon);
+
+      // Do not load subcommands
+      if (resource.options.isSubcommand) return;
+
+      if (resource.didReady) resource.didReady();
+
+      this.push({
+        resource,
+        group,
+      });
     }
   }
 }
