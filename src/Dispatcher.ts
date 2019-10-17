@@ -50,8 +50,10 @@ export default class Dispatcher {
     if (commandPrefix !== this.addon.client.options.prefix || message.author.bot) return;
 
     // We allow multiple commands to be ran at the same time
-    const commands = this.addon.commandStore.filter(
-      ({ resource }) => resource.name === commandName || resource.alias.includes(commandName),
+    const commands = this.addon.store.filter(
+      ({ type, resource }) =>
+        (type === 'commands' && resource.name === commandName) ||
+        resource.alias.includes(commandName),
     );
 
     if (!commands.length) {
