@@ -104,7 +104,5 @@ export default abstract class Addon {
 
     // Has to be done after the addon has done loading other classes
     this.store.load();
-
-    console.log(this.store.monitors);
   }
 }
