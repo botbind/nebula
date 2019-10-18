@@ -167,7 +167,7 @@ export default class StringValidator extends BaseValidator<string> {
 
       const matches = value.match(regex);
 
-      if (!matches) {
+      if (matches == null) {
         this.addError(rawValue, key, enhancedType);
 
         return false;

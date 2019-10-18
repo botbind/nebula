@@ -2,6 +2,7 @@ import Discord from 'discord.js';
 import merge from 'lodash.merge';
 import Util from './Util';
 import NebulaAddon from './Addon';
+import Monitor from './Monitor';
 import NebulaError from './NebulaError';
 import { Constructor } from './types';
 
@@ -98,10 +99,21 @@ export default class Client extends Discord.Client {
 
       if (this.didReady) this.didReady();
     })
-      .on('message', message => {
-        addons.forEach(addon => {
-          addon.dispatcher.dispatch(message);
-        });
+      .on('message', async message => {
+        for (const addon of addons) {
+          // Run monitors in parallel
+          const shouldDispatches = await Promise.all(
+            addon.store.monitors.map(({ resource }) => {
+              const monitor = resource as Monitor;
+
+              return monitor.shouldDispatch(message);
+            }),
+          );
+
+          shouldDispatches.forEach((shouldDispatch, i) => {
+            if (shouldDispatch) (addon.store.monitors[i].resource as Monitor).didDispatch(message);
+          });
+        }
 
         if (this.didMessage) this.didMessage(message);
       })

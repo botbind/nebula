@@ -381,7 +381,7 @@ export default class Command {
    * @param message The created message
    */
   protected async allowUsage(message: Discord.Message) {
-    if (!this.options.limit.time) return true;
+    if (this.options.limit.time === 0) return true;
 
     const currTime = Date.now();
     const id = this.options.limit.scope === 'guild' ? message.guild.id : message.author.id;
@@ -402,7 +402,8 @@ export default class Command {
     } else {
       this.usage.set(id, [1, currTime]);
 
-      if (!this._sweepInterval) this._sweepInterval = setInterval(this._sweep.bind(this), 30000);
+      if (this._sweepInterval == null)
+        this._sweepInterval = setInterval(this._sweep.bind(this), 30000);
     }
 
     return true;
@@ -413,7 +414,7 @@ export default class Command {
 
     this.usage.sweep(([, time]) => currTime - time > this.options.limit.time);
 
-    if (!this.usage.size) {
+    if (this.usage.size === 0) {
       clearInterval(this._sweepInterval!);
 
       this._sweepInterval = null;

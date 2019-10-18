@@ -1,6 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import merge from 'lodash.merge';
+import Discord from 'discord.js';
 import Addon from './Addon';
 import Command from './Command';
 import Task from './Task';
@@ -54,7 +55,7 @@ export interface StoreOptions extends Required<OptionalStoreOptions> {
 /**
  * Available and valid resource
  */
-export type Resource = Command & Task;
+export type Resource = Command | Task | Monitor;
 
 /**
  * The information of a resource
@@ -69,11 +70,6 @@ export interface ResourceInfo {
    * The group of the resource
    */
   group: string;
-
-  /**
-   * The type of the resource
-   */
-  type: ResourceTypes;
 }
 
 const structureMapping = {
@@ -93,7 +89,7 @@ const defaultOptions: StoreOptions = {
   ignoreGroupFolderName: 'ignore',
 };
 
-export default class Store extends Array<ResourceInfo> {
+export default class Store extends Discord.Collection<ResourceTypes, ResourceInfo[]> {
   /**
    * The addon of the store
    */
@@ -111,10 +107,31 @@ export default class Store extends Array<ResourceInfo> {
   constructor(addon: Addon, options: OptionalStoreOptions = {}) {
     if (!Util.isObject(options)) throw new NebulaError('The options for Store must be an object');
 
-    super(0);
+    super([['commands', []], ['tasks', []], ['monitors', []]]);
 
     this.addon = addon;
     this.options = merge({}, defaultOptions, options);
+  }
+
+  /**
+   * The loaded commands of the store
+   */
+  get commands() {
+    return this.get('commands')!;
+  }
+
+  /**
+   * The loaded tasks of the store
+   */
+  get tasks() {
+    return this.get('tasks')!;
+  }
+
+  /**
+   * The loaded monitors of the store
+   */
+  get monitors() {
+    return this.get('monitors')!;
   }
 
   /**
@@ -158,13 +175,12 @@ export default class Store extends Array<ResourceInfo> {
         const resource = new Resource(this.addon);
 
         // Do not load subcommands
-        if (resource.options.isSubcommand) return;
+        if (type === 'commands' && (resource as Command).options.isSubcommand) return;
 
         if (resource.didReady) resource.didReady();
 
-        this.push({
+        this.get(type)!.push({
           resource,
-          type,
           group,
         });
       }

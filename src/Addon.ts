@@ -50,11 +50,6 @@ export default abstract class Addon {
   public store: NebulaStore;
 
   /**
-   * The dispatcher of the addon
-   */
-  public dispatcher: NebulaDispatcher;
-
-  /**
    * The validator of the addon
    */
   public validator: NebulaValidator;
@@ -99,11 +94,17 @@ export default abstract class Addon {
     this.name = name;
     this.options = options;
     this.store = Store ? new Store(this) : new NebulaStore(this);
-    this.dispatcher = Dispatcher ? new Dispatcher(this) : new NebulaDispatcher(this);
     this.validator = Validator ? new Validator() : new NebulaValidator();
     this.permissions = Permission ? new Permission(this) : new NebulaPermissions(this);
 
+    this.store.monitors.push({
+      resource: Dispatcher ? new Dispatcher(this) : new NebulaDispatcher(this),
+      group: 'nebula-ignore',
+    });
+
     // Has to be done after the addon has done loading other classes
     this.store.load();
+
+    console.log(this.store.monitors);
   }
 }

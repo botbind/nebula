@@ -1,3 +1,5 @@
+import Addon from './Addon';
+
 export interface TaskOptions {
   /**
    * The name of the task
@@ -5,4 +7,12 @@ export interface TaskOptions {
   name: string;
 }
 
-export default class Task {}
+export default class Task {
+  protected addon: Addon;
+
+  public async didReady?(): Promise<void>;
+
+  constructor(addon: Addon) {
+    this.addon = addon;
+  }
+}

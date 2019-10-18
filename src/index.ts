@@ -10,6 +10,8 @@ export * from './Command';
 export { default as Command } from './Command';
 export * from './Task';
 export { default as Task } from './Task';
+export * from './Monitor';
+export { default as Monitor } from './Monitor';
 export * from './Permissions';
 export { default as Permissions } from './Permissions';
 export { default as NebulaError } from './NebulaError';

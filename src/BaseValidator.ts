@@ -48,7 +48,7 @@ export default class BaseValidator<T extends Primitives> {
    * @param values The list of values
    */
   public in(...values: T[]) {
-    if (!values.length)
+    if (values.length === 0)
       throw new NebulaError(`values for ${this.type}.in must have at least 1 value`);
 
     this.addRule(({ value, rawValue, key }) => {
@@ -67,7 +67,7 @@ export default class BaseValidator<T extends Primitives> {
    * @param values The list of values
    */
   public notIn(...values: T[]) {
-    if (!values.length)
+    if (values.length === 0)
       throw new NebulaError(`values for ${this.type}.notIn must have at least 1 value`);
 
     this.addRule(({ value, rawValue, key }) => {

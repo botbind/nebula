@@ -125,7 +125,7 @@ export default class NumberValidator extends BaseValidator<number> {
 
     this.rules.push(({ value, rawValue, key, ref }) => {
       const entry = ref(refKey);
-      if (!entry)
+      if (entry == null)
         throw new NebulaError(`The reference key for number.compare "${refKey}" not found`);
 
       const { value: value2, type } = entry;

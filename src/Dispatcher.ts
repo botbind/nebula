@@ -1,6 +1,7 @@
 import Discord from 'discord.js';
 import Command from './Command';
 import Addon from './Addon';
+import Monitor, { OptionalMonitorOptions } from './Monitor';
 import Util from './Util';
 import NebulaError from './NebulaError';
 import { ValidationResults, ValidationErrors } from './Validator';
@@ -11,12 +12,7 @@ import ValidationError from './ValidationError';
  */
 export type CommandComponents = [string, string, string[]];
 
-export default class Dispatcher {
-  /**
-   * The addon of this dispatcher
-   */
-  protected addon: Addon;
-
+export default class Dispatcher extends Monitor {
   /**
    * Invoked when the command name doesn't resolve to any commands
    */
@@ -36,27 +32,27 @@ export default class Dispatcher {
    * The dispatcher of all Nebula commands
    * @param addon The addon of this dispatcher
    */
-  constructor(addon: Addon) {
-    this.addon = addon;
+  constructor(addon: Addon, options: OptionalMonitorOptions = {}) {
+    super(addon, options);
   }
 
   /**
    * Dispatch commands based on messages.
    * @param message The created message
    */
-  public async dispatch(message: Discord.Message) {
+  public async didDispatch(message: Discord.Message) {
     const [commandPrefix, commandName, commandArgs] = this.parseCommand(message.content);
 
-    if (commandPrefix !== this.addon.client.options.prefix || message.author.bot) return;
+    if (commandPrefix !== this.addon.client.options.prefix) return;
 
     // We allow multiple commands to be ran at the same time
-    const commands = this.addon.store.filter(
-      ({ type, resource }) =>
-        (type === 'commands' && resource.name === commandName) ||
-        resource.alias.includes(commandName),
-    );
+    const commands = this.addon.store.commands.filter(({ resource }) => {
+      const command = resource as Command;
 
-    if (!commands.length) {
+      return command.name === commandName || command.alias.includes(commandName);
+    });
+
+    if (commands.length === 0) {
       if (this.didResolveCommandsUnsuccessfully)
         this.didResolveCommandsUnsuccessfully(message, commandName);
       return;
@@ -64,8 +60,11 @@ export default class Dispatcher {
 
     if (this.addon.client.options.typing) message.channel.startTyping();
 
-    for (const { resource } of commands)
-      this._dispatchCommandsRecursively(resource, message, commandArgs);
+    commands.forEach(({ resource }) => {
+      const command = resource as Command;
+
+      this._dispatchCommandsRecursively(command, message, commandArgs);
+    });
 
     if (this.addon.client.options.typing) message.channel.stopTyping();
   }
@@ -78,7 +77,7 @@ export default class Dispatcher {
     if (command.instantiatedSubcommands.length) {
       const [subcommandName, ...rest] = args;
 
-      if (!subcommandName) {
+      if (subcommandName == null) {
         if (command.options.subcommands.defaultToFirst) {
           const defaultSubcommand = command.instantiatedSubcommands[0];
 
@@ -99,7 +98,7 @@ export default class Dispatcher {
           instantiatedSubcommand.alias.includes(subcommandName),
       );
 
-      if (!subcommand) {
+      if (subcommand == null) {
         this.didResolveCommandsUnsuccessfully(message, subcommandName, command.name);
         return;
       }
@@ -144,7 +143,7 @@ export default class Dispatcher {
         validatedArgs = results as ValidationResults;
       }
 
-      if (!command.didDispatch) return;
+      if (command.didDispatch == null) return;
 
       let isSuccessfullyDispatched = true;
       try {

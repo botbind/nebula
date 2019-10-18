@@ -54,7 +54,7 @@ export interface ValidationRuleArguments<T extends Primitives> {
   /**
    * The function that returns a value store entry based on a ref key
    */
-  ref: (key: string) => ValueStoreEntry;
+  ref: (key: string) => ValueStoreEntry | undefined;
 
   /**
    * The created message
@@ -151,7 +151,7 @@ export default class Validator {
       const currValue = values[i];
       const err = [new ValidationError(currValue, currKey, currValidator.type)];
 
-      if (currValue === undefined) {
+      if (currValue == null) {
         if (!currValidator.flags.optional)
           return {
             [currKey]: err,
@@ -164,7 +164,7 @@ export default class Validator {
 
       const coerced = currValidator.coerce(currValue);
 
-      if (coerced === null)
+      if (coerced == null)
         return {
           [currKey]: err,
         };

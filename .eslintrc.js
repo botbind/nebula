@@ -29,6 +29,7 @@ module.exports = {
     'class-methods-use-this': 'off',
     'no-console': 'off',
     'no-restricted-syntax': 'off', // Allows for ... of usage
+    'no-await-in-loop': 'off',
     'max-len': [
       'error',
       100,
