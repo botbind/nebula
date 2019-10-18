@@ -107,10 +107,14 @@ export default class Store extends Discord.Collection<ResourceTypes, ResourceInf
   constructor(addon: Addon, options: OptionalStoreOptions = {}) {
     if (!Util.isObject(options)) throw new NebulaError('The options for Store must be an object');
 
-    super([['commands', []], ['tasks', []], ['monitors', []]]);
+    super();
 
     this.addon = addon;
     this.options = merge({}, defaultOptions, options);
+
+    this.set('commands', [])
+      .set('tasks', [])
+      .set('monitors', []);
   }
 
   /**
