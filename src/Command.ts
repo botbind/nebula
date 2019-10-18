@@ -1,6 +1,7 @@
 import Discord from 'discord.js';
 import merge from 'lodash.merge';
 import Addon from './Addon';
+import Resource from './Resource';
 import Util from './Util';
 import NebulaError from './NebulaError';
 import { Schema, ValidationResults, ValidationErrors } from './Validator';
@@ -149,12 +150,7 @@ const defaultOptions: CommandOptions = {
   requiredPermissions: [],
 };
 
-export default class Command {
-  /**
-   * The addon of the command
-   */
-  protected addon: Addon;
-
+export default class Command extends Resource {
   /**
    * The name of the command
    */
@@ -186,11 +182,6 @@ export default class Command {
   public instantiatedSubcommands: Command[];
 
   private _sweepInterval: NodeJS.Timeout | null;
-
-  /**
-   * Invoked when the command becomes ready to start working
-   */
-  public async didReady?(): Promise<void>;
 
   /**
    * Invoked after the command is inhibited due to it being run in a non-nsfw channel
@@ -352,10 +343,12 @@ export default class Command {
         'The permission level must be specified when permission options are specified',
       );
 
+    super(addon);
+
     const mergedOptions = merge({}, defaultOptions, options);
+
     const { name, alias, description } = mergedOptions;
 
-    this.addon = addon;
     this.name = name;
     this.alias = alias;
     this.description = description;

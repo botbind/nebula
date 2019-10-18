@@ -1,6 +1,7 @@
 import Discord from 'discord.js';
 import merge from 'lodash.merge';
 import Addon from './Addon';
+import Resource from './Resource';
 import Util from './Util';
 import NebulaError from './NebulaError';
 
@@ -35,21 +36,11 @@ const defaultOptions: MonitorOptions = {
   ignoreWebhooks: true,
 };
 
-export default abstract class Monitor {
-  /**
-   * The addon of the monitor
-   */
-  protected addon: Addon;
-
+export default abstract class Monitor extends Resource {
   /**
    * The options for the monitor
    */
   public options: MonitorOptions;
-
-  /**
-   * Invoked when the monitor becomes ready to start working
-   */
-  public async didReady?(): Promise<void>;
 
   /**
    * Whether the monitor should be dispatched
@@ -78,7 +69,8 @@ export default abstract class Monitor {
     if (!Util.isObject(options))
       throw new NebulaError('The options for the monitor must be an object!');
 
-    this.addon = addon;
+    super(addon);
+
     this.options = merge({}, defaultOptions, options);
   }
 }

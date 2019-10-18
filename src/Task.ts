@@ -1,18 +1,3 @@
-import Addon from './Addon';
+import Resource from './Resource';
 
-export interface TaskOptions {
-  /**
-   * The name of the task
-   */
-  name: string;
-}
-
-export default class Task {
-  protected addon: Addon;
-
-  public async didReady?(): Promise<void>;
-
-  constructor(addon: Addon) {
-    this.addon = addon;
-  }
-}
+export default class Task extends Resource {}

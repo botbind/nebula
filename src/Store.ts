@@ -6,6 +6,9 @@ import Addon from './Addon';
 import Command from './Command';
 import Task from './Task';
 import Monitor from './Monitor';
+import Event from './Event';
+import Language from './Language';
+import NebulaResource from './Resource';
 import Util from './Util';
 import NebulaError from './NebulaError';
 import { Constructor } from './types';
@@ -13,7 +16,7 @@ import { Constructor } from './types';
 /**
  * The types of resources
  */
-export type ResourceTypes = 'commands' | 'tasks' | 'monitors';
+export type ResourceTypes = 'commands' | 'tasks' | 'monitors' | 'events' | 'languages';
 
 /**
  * The folders that will be loaded for resources
@@ -53,18 +56,13 @@ export interface StoreOptions extends Required<OptionalStoreOptions> {
 }
 
 /**
- * Available and valid resource
- */
-export type Resource = Command | Task | Monitor;
-
-/**
  * The information of a resource
  */
 export interface ResourceInfo {
   /**
    * The loaded resource
    */
-  resource: Resource;
+  resource: NebulaResource;
 
   /**
    * The group of the resource
@@ -76,6 +74,8 @@ const structureMapping = {
   commands: Command,
   tasks: Task,
   monitors: Monitor,
+  events: Event,
+  languages: Language,
 };
 
 const defaultOptions: StoreOptions = {
@@ -84,6 +84,8 @@ const defaultOptions: StoreOptions = {
     commands: 'commands',
     tasks: 'tasks',
     monitors: 'monitors',
+    events: 'events',
+    languages: 'languages',
   },
   createFoldersIfNotExisted: true,
   ignoreGroupFolderName: 'ignore',
@@ -139,6 +141,20 @@ export default class Store extends Discord.Collection<ResourceTypes, ResourceInf
   }
 
   /**
+   * The loaded events of the store
+   */
+  get events() {
+    return this.get('events');
+  }
+
+  /**
+   * The loaded languages of the store
+   */
+  get languages() {
+    return this.get('languages');
+  }
+
+  /**
    * Load all the available and valid resources under the base directory
    */
   public load() {
@@ -173,7 +189,7 @@ export default class Store extends Discord.Collection<ResourceTypes, ResourceInf
       // eslint-disable-next-line import/no-dynamic-require, global-require, @typescript-eslint/no-var-requires
       const resourceReq = require(dir);
 
-      const Resource: Constructor<Resource> = resourceReq.default || resourceReq;
+      const Resource: Constructor<NebulaResource> = resourceReq.default || resourceReq;
 
       if (Resource.prototype instanceof structureMapping[type]) {
         const resource = new Resource(this.addon);
