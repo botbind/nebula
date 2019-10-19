@@ -3,6 +3,7 @@ import merge from 'lodash.merge';
 import Util from './Util';
 import NebulaAddon from './Addon';
 import NebulaError from './NebulaError';
+import Command from './Command';
 import { Constructor } from './types';
 
 interface BaseClientOptions {
@@ -86,6 +87,23 @@ export default class Client extends Discord.Client {
 
       if (this.didReady) this.didReady();
     });
+  }
+
+  /**
+   * The invite link for the bot
+   */
+  get invite() {
+    const permissions = new Discord.Permissions(3072);
+
+    loadedAddons.forEach(addon => {
+      addon.store.commands.forEach(({ resource }) => {
+        permissions.add(...(resource as Command).options.requiredPermissions);
+      });
+    });
+
+    return `https://discordapp.com/oauth2/authorize?client_id=${this.app!.id}&permissions=${
+      permissions.bitfield
+    }&scope=bot`;
   }
 
   /**
