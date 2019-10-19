@@ -18,6 +18,7 @@ export * from './Language';
 export { default as Language } from './Language';
 export * from './Permissions';
 export { default as Permissions } from './Permissions';
+export { default as Message } from './Message';
 export { default as NebulaError } from './NebulaError';
 export * from './Validator';
 export { default as Validator } from './Validator';

@@ -1,5 +1,4 @@
-import Discord from 'discord.js';
-import { Command, Addon } from '../..';
+import { Command, Addon, Message } from '../..';
 
 export default class PermissionCommand extends Command {
   constructor(addon: Addon) {
@@ -11,11 +10,11 @@ export default class PermissionCommand extends Command {
     });
   }
 
-  public async willDispatch(message: Discord.Message) {
-    message.channel.send('Test suites for permissions');
+  public async willDispatch(message: Message) {
+    message.send('Test suites for permissions');
   }
 
-  public async didDispatch(message: Discord.Message) {
-    message.channel.send('You are allowed to run this command');
+  public async didDispatch(message: Message) {
+    message.send('You are allowed to run this command');
   }
 }

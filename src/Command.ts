@@ -2,6 +2,7 @@ import Discord from 'discord.js';
 import merge from 'lodash.merge';
 import Addon from './Addon';
 import Resource from './Resource';
+import Message from './Message';
 import Util from './Util';
 import NebulaError from './NebulaError';
 import { Schema, ValidationResults, ValidationErrors } from './Validator';
@@ -187,27 +188,27 @@ export default class Command extends Resource {
    * Invoked after the command is inhibited due to it being run in a non-nsfw channel
    * @param message The created message
    */
-  protected async didInhibitNSFW(message: Discord.Message) {
-    message.channel.send('This command should only be sent in a NSFW channel');
+  protected async didInhibitNSFW(message: Message) {
+    message.send('This command should only be sent in a NSFW channel');
   }
 
   /**
    * Invoked after the command is inhibited due to excess usage per user
    * @param message The created message
    */
-  protected async didInhibitUsage(message: Discord.Message) {
+  protected async didInhibitUsage(message: Message) {
     const id = this.options.limit.scope === 'guild' ? message.guild.id : message.author.id;
     const timeLeft = (this.options.limit.time - (Date.now() - this.usage.get(id)![1])) / 1000;
 
-    message.channel.send(`You have ${timeLeft} seconds left before you can run this command again`);
+    message.send(`You have ${timeLeft} seconds left before you can run this command again`);
   }
 
   /**
    * Invoked after the command is inhibited due to not enough permissions
    * @param message The created message
    */
-  protected async didInhibitPerm(message: Discord.Message) {
-    return message.channel.send('You are not allowed to run this command!');
+  protected async didInhibitPerm(message: Message) {
+    return message.send('You are not allowed to run this command!');
   }
 
   /**
@@ -215,13 +216,10 @@ export default class Command extends Resource {
    * @param message The created message
    * @param validationErrs The validation erros.
    */
-  public async didCatchValidationErrors(
-    message: Discord.Message,
-    validationErrs: ValidationErrors,
-  ) {
+  public async didCatchValidationErrors(message: Message, validationErrs: ValidationErrors) {
     Object.values(validationErrs).forEach(errs => {
       errs.forEach(err => {
-        message.channel.send(err.message);
+        message.send(err.message);
       });
     });
   }
@@ -230,13 +228,13 @@ export default class Command extends Resource {
    * Invoked when the command before the command is processed
    * @param message The created message
    */
-  public async willDispatch?(message: Discord.Message): Promise<void>;
+  public async willDispatch?(message: Message): Promise<void>;
 
   /**
    * Whether the command should be dispatched
    * @param message The created message
    */
-  public async shouldDispatch?(message: Discord.Message): Promise<boolean>;
+  public async shouldDispatch?(message: Message): Promise<boolean>;
 
   /**
    * Invoked when the command is dispatched
@@ -244,7 +242,7 @@ export default class Command extends Resource {
    * @param args The user arguments
    */
   public async didDispatch?(
-    message: Discord.Message,
+    message: Message,
     args?: ValidationResults,
   ): Promise<void | boolean | Error>;
 
@@ -253,10 +251,7 @@ export default class Command extends Resource {
    * @param message The created message
    * @param args The user arguments
    */
-  public async didDispatchSuccessfully?(
-    message: Discord.Message,
-    args?: ValidationResults,
-  ): Promise<void>;
+  public async didDispatchSuccessfully?(message: Message, args?: ValidationResults): Promise<void>;
 
   /**
    * Invoked when the command fails
@@ -264,7 +259,7 @@ export default class Command extends Resource {
    * @param args The user arguments
    */
   public async didDispatchUnsuccessfully?(
-    message: Discord.Message,
+    message: Message,
     args?: ValidationResults,
   ): Promise<void>;
 
@@ -272,7 +267,7 @@ export default class Command extends Resource {
    * Compose the inhibitors and run shouldDispatch under the hood
    * @param message The created message
    */
-  public async composeInhibitors(message: Discord.Message) {
+  public async composeInhibitors(message: Message) {
     let shouldDispatch = true;
 
     if (this.shouldDispatch) shouldDispatch = await this.shouldDispatch(message);
@@ -373,7 +368,7 @@ export default class Command extends Resource {
    * Whether the command is allowed to dispatch considering the limit usage
    * @param message The created message
    */
-  protected async allowUsage(message: Discord.Message) {
+  protected async allowUsage(message: Message) {
     if (this.options.limit.time === 0) return true;
 
     const currTime = Date.now();
@@ -418,7 +413,7 @@ export default class Command extends Resource {
    * Whether the command is allowed to dispatch in a non-nsfw channel if marked nsfw
    * @param message The created message
    */
-  protected async allowNSFW(message: Discord.Message) {
+  protected async allowNSFW(message: Message) {
     return !this.options.nsfw || (message.channel as Discord.TextChannel).nsfw;
   }
 
@@ -426,7 +421,7 @@ export default class Command extends Resource {
    * Whether the command is allowed to dispatch considering the permission levels
    * @param message The created message
    */
-  protected async allowPerm(message: Discord.Message) {
+  protected async allowPerm(message: Message) {
     const permissionLevel = this.options.permission.level;
 
     if (this.options.permission.exact)

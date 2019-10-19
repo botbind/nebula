@@ -1,7 +1,7 @@
-import Discord from 'discord.js';
 import Command from './Command';
 import Addon from './Addon';
 import Monitor, { OptionalMonitorOptions } from './Monitor';
+import Message from './Message';
 import Util from './Util';
 import NebulaError from './NebulaError';
 import { ValidationResults, ValidationErrors } from './Validator';
@@ -17,11 +17,11 @@ export default class Dispatcher extends Monitor {
    * Invoked when the command name doesn't resolve to any commands
    */
   protected async didResolveCommandsUnsuccessfully(
-    message: Discord.Message,
+    message: Message,
     name: string,
     parent?: string,
   ) {
-    message.channel.send(
+    message.send(
       `Cannot find command "${name}" from ${this.addon.name} ${
         parent ? `of parent ${parent}` : ''
       }`,
@@ -40,7 +40,7 @@ export default class Dispatcher extends Monitor {
    * Dispatch commands based on messages.
    * @param message The created message
    */
-  public async didDispatch(message: Discord.Message) {
+  public async didDispatch(message: Message) {
     const [commandPrefix, commandName, commandArgs] = this.parseCommand(message.content);
 
     if (commandPrefix !== this.addon.client.options.prefix) return;
@@ -69,11 +69,7 @@ export default class Dispatcher extends Monitor {
     if (this.addon.client.options.typing) message.channel.stopTyping();
   }
 
-  private async _dispatchCommandsRecursively(
-    command: Command,
-    message: Discord.Message,
-    args: string[],
-  ) {
+  private async _dispatchCommandsRecursively(command: Command, message: Message, args: string[]) {
     if (command.instantiatedSubcommands.length) {
       const [subcommandName, ...rest] = args;
 
@@ -105,11 +101,21 @@ export default class Dispatcher extends Monitor {
 
       this._dispatchCommandsRecursively(subcommand, message, rest);
     } else {
+      // Initial arps collection
+      // Stop indicator of the arp must be set to false here since instead of inside the message,
+      // due to the async nature of message.send()
+      const responseCollection = this.addon.client.arp.get(message.id);
+      if (!responseCollection) this.addon.client.arp.set(message.id, [false, []]);
+
       if (command.willDispatch) command.willDispatch(message);
 
       const shouldDispatch = await command.composeInhibitors(message);
 
-      if (!shouldDispatch) return;
+      if (!shouldDispatch) {
+        // Whenever the function returns, stop collection immediately
+        this._stopArpCollection(message);
+        return;
+      }
 
       let validatedArgs;
 
@@ -137,13 +143,18 @@ export default class Dispatcher extends Monitor {
               {} as ValidationErrors,
             ),
           );
+
+          this._stopArpCollection(message);
           return;
         }
 
         validatedArgs = results as ValidationResults;
       }
 
-      if (command.didDispatch == null) return;
+      if (command.didDispatch == null) {
+        this._stopArpCollection(message);
+        return;
+      }
 
       let isSuccessfullyDispatched = true;
       try {
@@ -157,12 +168,18 @@ export default class Dispatcher extends Monitor {
 
       if (!isSuccessfullyDispatched) {
         if (command.didDispatchUnsuccessfully)
-          command.didDispatchUnsuccessfully(message, validatedArgs);
-        return;
-      }
+          await command.didDispatchUnsuccessfully(message, validatedArgs);
+      } else if (command.didDispatchSuccessfully)
+        await command.didDispatchSuccessfully(message, validatedArgs);
 
-      if (command.didDispatchSuccessfully) command.didDispatchSuccessfully(message, validatedArgs);
+      this._stopArpCollection(message);
     }
+  }
+
+  private _stopArpCollection(message: Message) {
+    const [, responses] = this.addon.client.arp.get(message.id)!;
+
+    this.addon.client.arp.set(message.id, [true, responses]);
   }
 
   /**

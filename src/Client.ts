@@ -4,6 +4,8 @@ import Util from './Util';
 import NebulaAddon from './Addon';
 import NebulaError from './NebulaError';
 import Command from './Command';
+import Message from './Message';
+import createExtensions from './internals/createExtensions';
 import { Constructor } from './types';
 
 interface BaseClientOptions {
@@ -26,6 +28,16 @@ interface BaseClientOptions {
    * The discord ids for bot owners of the client
    */
   owners?: string[];
+
+  /**
+   * Whether the commands should be dispatched when the user edits the activating message
+   */
+  dispatchOnEdit?: boolean;
+
+  /**
+   * Whether the commands should be deleted when the user deletes the activating message
+   */
+  deletable?: boolean;
 }
 
 /**
@@ -43,6 +55,8 @@ const defaultOptions: ClientOptions = {
   prefix: '!',
   debug: process.env.NODE_ENV === 'development',
   owners: [],
+  dispatchOnEdit: false,
+  deletable: false,
 };
 
 const loadedAddons: NebulaAddon[] = [];
@@ -59,9 +73,14 @@ export default class Client extends Discord.Client {
   public app: Discord.OAuth2Application | null;
 
   /**
+   * The activator/responses pairs of the client
+   */
+  public arp: Discord.Collection<string, [boolean, Message[]]>;
+
+  /**
    * Invoked when the client becomes ready to start working
    */
-  protected async didReady?(): Promise<void>;
+  protected async willReady?(): Promise<void>;
 
   /**
    * The main hub for loading addons
@@ -77,16 +96,27 @@ export default class Client extends Discord.Client {
 
     this.options = mergedOptions;
     this.app = null;
+    this.arp = new Discord.Collection();
 
     this.prependOnceListener('ready', async () => {
       const app = await this.fetchApplication();
 
       this.app = app;
 
+      createExtensions(this);
+
       if (!this.options.owners.includes(app.owner.id)) this.options.owners.push(app.owner.id);
 
-      if (this.didReady) this.didReady();
-    });
+      if (this.willReady) this.willReady();
+    })
+      .prependListener('messageUpdate', (oldMessage: Message, newMessage: Message) => {
+        if (newMessage.content === oldMessage.content && !this.options.dispatchOnEdit) return;
+
+        this.emit('message', newMessage);
+      })
+      .prependListener('messageDelete', (message: Message) => {
+        this.arp.sweep((_, id) => id === message.id);
+      });
   }
 
   /**

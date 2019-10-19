@@ -1,7 +1,6 @@
-import Discord from 'discord.js';
-import { Event, Addon } from '../..';
+import { Event, Addon, Message } from '../..';
 
-export default class ReadyEvent extends Event {
+export default class MessageEvent extends Event {
   constructor(addon: Addon) {
     super(addon, {
       name: 'message',
@@ -9,9 +8,9 @@ export default class ReadyEvent extends Event {
     });
   }
 
-  public async didDispatch(message: Discord.Message) {
+  public async didDispatch(message: Message) {
     if (message.author.bot) return;
 
-    message.channel.send('Hi, Im from event!');
+    message.send('Hi, Im from event!');
   }
 }

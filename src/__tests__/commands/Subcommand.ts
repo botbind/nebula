@@ -1,5 +1,4 @@
-import Discord from 'discord.js';
-import { Command, Addon, Validator, ValidationResults } from '../..';
+import { Command, Addon, Validator, ValidationResults, Message } from '../..';
 
 class Child3 extends Command {
   constructor(addon: Addon) {
@@ -12,8 +11,8 @@ class Child3 extends Command {
     });
   }
 
-  public async didDispatch(message: Discord.Message, { num }: ValidationResults) {
-    message.channel.send(`This comes from child3. I accept arguments! ${num}`);
+  public async didDispatch(message: Message, { num }: ValidationResults) {
+    message.send(`This comes from child3. I accept arguments! ${num}`);
   }
 }
 
@@ -28,8 +27,8 @@ class Child1 extends Command {
     });
   }
 
-  public async didDispatch(message: Discord.Message) {
-    message.channel.send('This comes from child1');
+  public async didDispatch(message: Message) {
+    message.send('This comes from child1');
   }
 }
 
@@ -41,8 +40,8 @@ class Child2 extends Command {
     });
   }
 
-  public async didDispatch(message: Discord.Message) {
-    message.channel.send('This comes from child2');
+  public async didDispatch(message: Message) {
+    message.send('This comes from child2');
   }
 }
 

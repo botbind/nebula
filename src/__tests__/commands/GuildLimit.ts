@@ -1,5 +1,4 @@
-import Discord from 'discord.js';
-import { Command, Addon } from '../..';
+import { Command, Addon, Message } from '../..';
 
 export default class GuildLimitCommand extends Command {
   constructor(addon: Addon) {
@@ -12,12 +11,12 @@ export default class GuildLimitCommand extends Command {
     });
   }
 
-  public async willDispatch(message: Discord.Message) {
-    message.channel.send('Test suites for guild limit');
+  public async willDispatch(message: Message) {
+    message.send('Test suites for guild limit');
   }
 
-  public async didDispatch(message: Discord.Message) {
-    message.channel.send(
+  public async didDispatch(message: Message) {
+    message.send(
       `You have ${this.options.limit.bucket -
         this.usage.get(message.guild.id)![0]} time(s) left before cooling down. Scope: Guild`,
     );

@@ -3,7 +3,7 @@ import TestAddon from './addon';
 import { Client } from '..';
 
 class TestClient extends Client {
-  public async didReady() {
+  public async willReady() {
     this.inject(TestAddon);
   }
 }
