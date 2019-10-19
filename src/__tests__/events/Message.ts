@@ -1,4 +1,4 @@
-import { Event, Addon, Message } from '../..';
+import { Event, Addon } from '../..';
 
 export default class MessageEvent extends Event {
   constructor(addon: Addon) {
@@ -8,9 +8,5 @@ export default class MessageEvent extends Event {
     });
   }
 
-  public async didDispatch(message: Message) {
-    if (message.author.bot) return;
-
-    message.send('Hi, Im from event!');
-  }
+  public async didDispatch() {}
 }

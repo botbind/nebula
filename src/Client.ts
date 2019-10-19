@@ -115,7 +115,15 @@ export default class Client extends Discord.Client {
         this.emit('message', newMessage);
       })
       .prependListener('messageDelete', (message: Message) => {
-        this.arp.sweep((_, id) => id === message.id);
+        this.arp.sweep(([, responses], id) => {
+          if (id === message.id) {
+            responses.filter(response => !response.deleted).forEach(response => response.delete());
+
+            return true;
+          }
+
+          return false;
+        });
       });
   }
 
