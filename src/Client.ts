@@ -2,7 +2,6 @@ import Discord from 'discord.js';
 import merge from 'lodash.merge';
 import Util from './Util';
 import NebulaAddon from './Addon';
-import Monitor from './Monitor';
 import NebulaError from './NebulaError';
 import { Constructor } from './types';
 
@@ -45,7 +44,7 @@ const defaultOptions: ClientOptions = {
   owners: [],
 };
 
-const addons: NebulaAddon[] = [];
+const loadedAddons: NebulaAddon[] = [];
 
 export default class Client extends Discord.Client {
   /**
@@ -64,18 +63,6 @@ export default class Client extends Discord.Client {
   protected async didReady?(): Promise<void>;
 
   /**
-   * Invoked when a message is created
-   * @param message The created message
-   */
-  protected async didMessage?(message: Discord.Message): Promise<void>;
-
-  /**
-   * Invoked when the client's WebSocket encounters a connection error
-   * @param error The encountered error
-   */
-  protected async didCatchError?(err: Error): Promise<void>;
-
-  /**
    * The main hub for loading addons
    * @param options Options of the client
    */
@@ -90,7 +77,7 @@ export default class Client extends Discord.Client {
     this.options = mergedOptions;
     this.app = null;
 
-    this.on('ready', async () => {
+    this.prependOnceListener('ready', async () => {
       const app = await this.fetchApplication();
 
       this.app = app;
@@ -98,44 +85,23 @@ export default class Client extends Discord.Client {
       if (!this.options.owners.includes(app.owner.id)) this.options.owners.push(app.owner.id);
 
       if (this.didReady) this.didReady();
-    })
-      .on('message', async message => {
-        for (const addon of addons) {
-          // Run monitors in parallel
-          const shouldDispatches = await Promise.all(
-            addon.store.monitors.map(({ resource }) => {
-              const monitor = resource as Monitor;
-
-              return monitor.shouldDispatch(message);
-            }),
-          );
-
-          shouldDispatches.forEach((shouldDispatch, i) => {
-            if (shouldDispatch) (addon.store.monitors[i].resource as Monitor).didDispatch(message);
-          });
-        }
-
-        if (this.didMessage) this.didMessage(message);
-      })
-      .on('error', err => {
-        if (this.didCatchError) this.didCatchError(err);
-      });
+    });
   }
 
   /**
-   * Load and start an addon
-   * @param Addon The addon to load
+   * Inject addons
+   * @param addons The addons to load
    */
-  protected load(Addon: Constructor<NebulaAddon>) {
-    if (!(Addon.prototype instanceof NebulaAddon))
-      throw new NebulaError('The addon to be loaded must inherit the Addon structure');
+  protected inject(...addons: Constructor<NebulaAddon>[]) {
+    if (addons.length === 0) throw new NebulaError('At least 1 addon must be specified');
 
-    const addon = new Addon(this);
+    loadedAddons.push(
+      ...addons.map(Addon => {
+        if (!(Addon.prototype instanceof NebulaAddon))
+          throw new NebulaError('The addon to be loaded must inherit the Addon structure');
 
-    addons.push(addon);
-
-    if (addon.didReady) addon.didReady();
-
-    return this;
+        return new Addon(this);
+      }),
+    );
   }
 }

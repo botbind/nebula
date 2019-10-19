@@ -116,7 +116,9 @@ export default class Store extends Discord.Collection<ResourceTypes, ResourceInf
 
     this.set('commands', [])
       .set('tasks', [])
-      .set('monitors', []);
+      .set('monitors', [])
+      .set('events', [])
+      .set('languages', []);
   }
 
   /**
@@ -144,14 +146,14 @@ export default class Store extends Discord.Collection<ResourceTypes, ResourceInf
    * The loaded events of the store
    */
   get events() {
-    return this.get('events');
+    return this.get('events')!;
   }
 
   /**
    * The loaded languages of the store
    */
   get languages() {
-    return this.get('languages');
+    return this.get('languages')!;
   }
 
   /**

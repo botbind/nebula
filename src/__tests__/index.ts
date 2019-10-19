@@ -3,13 +3,8 @@ import TestAddon from './addon';
 import { Client } from '..';
 
 class TestClient extends Client {
-  protected async didReady() {
-    this.load(TestAddon);
-    this.user.setActivity('Tests ready!');
-  }
-
-  protected async didCatchError(err: Error) {
-    console.error(err);
+  public async didReady() {
+    this.inject(TestAddon);
   }
 }
 

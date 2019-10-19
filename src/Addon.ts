@@ -5,6 +5,8 @@ import Util from './Util';
 import NebulaPermissions from './Permissions';
 import NebulaError from './NebulaError';
 import NebulaValidator from './Validator';
+import Event from './Event';
+import Monitor from './Monitor';
 import { Constructor } from './types';
 
 /**
@@ -38,7 +40,7 @@ export interface AddonOptions {
   permissions?: Constructor<NebulaPermissions>;
 }
 
-export default abstract class Addon {
+export default class Addon {
   /**
    * The client of the addon
    */
@@ -104,5 +106,23 @@ export default abstract class Addon {
 
     // Has to be done after the addon has done loading other classes
     this.store.load();
+
+    this.store.events.forEach(({ resource }) => {
+      const event = resource as Event;
+      const prependMethod = event.options.once ? 'prependOnceListener' : 'prependListener';
+
+      this.client[prependMethod](event.name, event.didDispatch);
+    });
+
+    this.client.emit('ready');
+    this.client.prependListener('message', async message => {
+      const shouldDispatches = await Promise.all(
+        this.store.monitors.map(({ resource }) => (resource as Monitor).shouldDispatch(message)),
+      );
+
+      shouldDispatches.forEach((shouldDispatch, i) => {
+        if (shouldDispatch) (this.store.monitors[i].resource as Monitor).didDispatch(message);
+      });
+    });
   }
 }
