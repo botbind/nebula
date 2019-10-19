@@ -3,14 +3,12 @@ import Client from '../Client';
 import Util from '../Util';
 import Message from '../Message';
 
-type EditOptions = Discord.MessageOptions | Discord.RichEmbed;
-
 export default function createExtensions(client: Client) {
   Object.defineProperties(Discord.Message.prototype, {
     send: {
       async value(
         content: Discord.StringResolvable = '',
-        options?: EditOptions | Discord.Attachment,
+        options?: Discord.MessageOptions | Discord.RichEmbed | Discord.Attachment,
       ) {
         let actualContent = content;
         let actualOptions = options;
