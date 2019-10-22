@@ -1,12 +1,11 @@
 import Discord from 'discord.js';
 import Addon from './Addon';
-import Message from './Message';
 import NebulaError from './NebulaError';
 
 /**
  * The function that returns whether a member is allowed to run a command
  */
-export type PermissionCheck = (message: Message) => Promise<boolean>;
+export type PermissionCheck = (message: Discord.Message) => Promise<boolean>;
 
 export default class Permissions extends Discord.Collection<number, PermissionCheck> {
   /**
@@ -35,7 +34,7 @@ export default class Permissions extends Discord.Collection<number, PermissionCh
    * @param level The level of the permission
    * @param message The created message
    */
-  public async checkExact(level: number, message: Message) {
+  public async checkExact(level: number, message: Discord.Message) {
     const check = this.get(level);
 
     if (check == null) throw new NebulaError(`Permission level ${level} not found`);
@@ -50,7 +49,7 @@ export default class Permissions extends Discord.Collection<number, PermissionCh
    * @param level The level of the permission
    * @param message The created message
    */
-  public async check(level: number, message: Message) {
+  public async check(level: number, message: Discord.Message) {
     for (const [permissionLevel, permissionCheck] of this.entries()) {
       if (permissionLevel > level) {
         const result = await permissionCheck(message);

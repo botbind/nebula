@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
-import merge from 'lodash.merge';
 import Discord from 'discord.js';
+import merge from 'lodash.merge';
 import Addon from './Addon';
 import Command from './Command';
 import Task from './Task';
@@ -55,21 +55,6 @@ export interface StoreOptions extends Required<OptionalStoreOptions> {
   folderNames: Required<FolderNames>;
 }
 
-/**
- * The information of a resource
- */
-export interface ResourceInfo {
-  /**
-   * The loaded resource
-   */
-  resource: NebulaResource;
-
-  /**
-   * The group of the resource
-   */
-  group: string;
-}
-
 const structureMapping = {
   commands: Command,
   tasks: Task,
@@ -91,7 +76,7 @@ const defaultOptions: StoreOptions = {
   ignoreGroupFolderName: 'ignore',
 };
 
-export default class Store extends Discord.Collection<ResourceTypes, ResourceInfo[]> {
+export default class Store extends Discord.Collection<ResourceTypes, NebulaResource[]> {
   /**
    * The addon of the store
    */
@@ -125,35 +110,35 @@ export default class Store extends Discord.Collection<ResourceTypes, ResourceInf
    * The loaded commands of the store
    */
   get commands() {
-    return this.get('commands')!;
+    return this.get('commands') as Command[];
   }
 
   /**
    * The loaded tasks of the store
    */
   get tasks() {
-    return this.get('tasks')!;
+    return this.get('tasks') as Task[];
   }
 
   /**
    * The loaded monitors of the store
    */
   get monitors() {
-    return this.get('monitors')!;
+    return this.get('monitors') as Monitor[];
   }
 
   /**
    * The loaded events of the store
    */
   get events() {
-    return this.get('events')!;
+    return this.get('events') as Event[];
   }
 
   /**
    * The loaded languages of the store
    */
   get languages() {
-    return this.get('languages')!;
+    return this.get('languages') as Language[];
   }
 
   /**
@@ -196,15 +181,14 @@ export default class Store extends Discord.Collection<ResourceTypes, ResourceInf
       if (Resource.prototype instanceof structureMapping[type]) {
         const resource = new Resource(this.addon);
 
+        resource.group = group;
+
         // Do not load subcommands
         if (type === 'commands' && (resource as Command).options.isSubcommand) return;
 
         if (resource.didReady) resource.didReady();
 
-        this.get(type)!.push({
-          resource,
-          group,
-        });
+        this.get(type)!.push(resource);
       }
     }
   }

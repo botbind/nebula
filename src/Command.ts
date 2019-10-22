@@ -2,7 +2,6 @@ import Discord from 'discord.js';
 import merge from 'lodash.merge';
 import Addon from './Addon';
 import Resource from './Resource';
-import Message from './Message';
 import Util from './Util';
 import NebulaError from './NebulaError';
 import { Schema, ValidationResults, ValidationErrors } from './Validator';
@@ -151,6 +150,8 @@ const defaultOptions: CommandOptions = {
   requiredPermissions: [],
 };
 
+type SendOptions = Discord.MessageOptions | Discord.RichEmbed | Discord.Attachment;
+
 export default class Command extends Resource {
   /**
    * The name of the command
@@ -178,122 +179,127 @@ export default class Command extends Resource {
   protected usage: Discord.Collection<string, [number, number]>;
 
   /**
-   * The instantiated subcommands of this command
+   * The instantiated subcommands of the command
    */
   public instantiatedSubcommands: Command[];
 
+  /**
+   * The responses to an activator of the command
+   */
+  public responses: Discord.Collection<string, Discord.Message[]>;
+
   private _sweepInterval: NodeJS.Timeout | null;
+
+  private _message?: Discord.Message;
+
+  /**
+   * The activating message of the command
+   */
+  get message() {
+    return this._message!;
+  }
+
+  set message(message: Discord.Message) {
+    this._message = message;
+  }
 
   /**
    * Invoked after the command is inhibited due to it being run in a non-nsfw channel
    * @param message The created message
    */
-  protected async didInhibitNSFW(message: Message) {
-    message.send('This command should only be sent in a NSFW channel');
+  protected async didInhibitNSFW() {
+    this.send('This command should only be sent in a NSFW channel');
   }
 
   /**
    * Invoked after the command is inhibited due to excess usage per user
    * @param message The created message
    */
-  protected async didInhibitUsage(message: Message) {
-    const id = this.options.limit.scope === 'guild' ? message.guild.id : message.author.id;
+  protected async didInhibitUsage() {
+    const id =
+      this.options.limit.scope === 'guild' ? this.message.guild.id : this.message.author.id;
     const timeLeft = (this.options.limit.time - (Date.now() - this.usage.get(id)![1])) / 1000;
 
-    message.send(`You have ${timeLeft} seconds left before you can run this command again`);
+    this.send(`You have ${timeLeft} seconds left before you can run this command again`);
   }
 
   /**
    * Invoked after the command is inhibited due to not enough permissions
-   * @param message The created message
    */
-  protected async didInhibitPerm(message: Message) {
-    return message.send('You are not allowed to run this command!');
+  protected async didInhibitPerm() {
+    return this.send('You are not allowed to run this command!');
   }
 
   /**
    * Invoked when the user arguments don't meet the validation schema
-   * @param message The created message
    * @param validationErrs The validation erros.
    */
-  public async didCatchValidationErrors(message: Message, validationErrs: ValidationErrors) {
+  public async didCatchValidationErrors(validationErrs: ValidationErrors) {
     Object.values(validationErrs).forEach(errs => {
       errs.forEach(err => {
-        message.send(err.message);
+        this.send(err.message);
       });
     });
   }
 
   /**
    * Invoked when the command before the command is processed
-   * @param message The created message
    */
-  public async willDispatch?(message: Message): Promise<void>;
+  public async willDispatch?(): Promise<void>;
 
   /**
    * Whether the command should be dispatched
-   * @param message The created message
    */
-  public async shouldDispatch?(message: Message): Promise<boolean>;
+  public async shouldDispatch?(): Promise<boolean>;
 
   /**
    * Invoked when the command is dispatched
-   * @param message The created message
    * @param args The user arguments
    */
-  public async didDispatch?(
-    message: Message,
-    args?: ValidationResults,
-  ): Promise<void | boolean | Error>;
+  public async didDispatch?(args?: ValidationResults): Promise<void | boolean | Error>;
 
   /**
    * Invoked when the command is successfully dispatched
-   * @param message The created message
    * @param args The user arguments
    */
-  public async didDispatchSuccessfully?(message: Message, args?: ValidationResults): Promise<void>;
+  public async didDispatchSuccessfully?(args?: ValidationResults): Promise<void>;
 
   /**
    * Invoked when the command fails
-   * @param message The created message
    * @param args The user arguments
    */
-  public async didDispatchUnsuccessfully?(
-    message: Message,
-    args?: ValidationResults,
-  ): Promise<void>;
+  public async didDispatchUnsuccessfully?(args?: ValidationResults): Promise<void>;
 
   /**
    * Compose the inhibitors and run shouldDispatch under the hood
-   * @param message The created message
    */
-  public async composeInhibitors(message: Message) {
+  public async composeInhibitors() {
     let shouldDispatch = true;
 
-    if (this.shouldDispatch) shouldDispatch = await this.shouldDispatch(message);
+    if (this.shouldDispatch) shouldDispatch = await this.shouldDispatch();
 
     if (!shouldDispatch) return false;
 
-    const allowUsage = await this.allowUsage(message);
+    const allowUsage = await this.allowUsage();
 
     if (!allowUsage) {
-      this.didInhibitUsage(message);
+      this.didInhibitUsage();
 
       return false;
     }
 
-    const allowNSFW = await this.allowNSFW(message);
+    const allowNSFW = await this.allowNSFW();
 
     if (!allowNSFW) {
-      this.didInhibitNSFW(message);
+      this.didInhibitNSFW();
 
       return false;
     }
 
-    const allowPerm = await this.allowPerm(message);
+    const allowPerm = await this.allowPerm();
 
     if (!allowPerm) {
-      this.didInhibitPerm(message);
+      this.didInhibitPerm();
 
       return false;
     }
@@ -350,6 +356,7 @@ export default class Command extends Resource {
     this.options = mergedOptions;
     this.usage = new Discord.Collection();
     this._sweepInterval = null;
+    this.responses = new Discord.Collection();
 
     this.instantiatedSubcommands = this.options.subcommands.commands.map(Subcommand => {
       if (!(Subcommand.prototype instanceof Command))
@@ -366,13 +373,13 @@ export default class Command extends Resource {
 
   /**
    * Whether the command is allowed to dispatch considering the limit usage
-   * @param message The created message
    */
-  protected async allowUsage(message: Message) {
+  protected async allowUsage() {
     if (this.options.limit.time === 0) return true;
 
     const currTime = Date.now();
-    const id = this.options.limit.scope === 'guild' ? message.guild.id : message.author.id;
+    const id =
+      this.options.limit.scope === 'guild' ? this.message.guild.id : this.message.author.id;
     const usage = this.usage.get(id);
 
     if (usage) {
@@ -411,22 +418,56 @@ export default class Command extends Resource {
 
   /**
    * Whether the command is allowed to dispatch in a non-nsfw channel if marked nsfw
-   * @param message The created message
    */
-  protected async allowNSFW(message: Message) {
-    return !this.options.nsfw || (message.channel as Discord.TextChannel).nsfw;
+  protected async allowNSFW() {
+    return !this.options.nsfw || (this.message.channel as Discord.TextChannel).nsfw;
   }
 
   /**
    * Whether the command is allowed to dispatch considering the permission levels
    * @param message The created message
    */
-  protected async allowPerm(message: Message) {
+  protected async allowPerm() {
     const permissionLevel = this.options.permission.level;
 
     if (this.options.permission.exact)
-      return this.addon.permissions.checkExact(permissionLevel, message);
+      return this.addon.permissions.checkExact(permissionLevel, this.message);
 
-    return this.addon.permissions.check(permissionLevel, message);
+    return this.addon.permissions.check(permissionLevel, this.message);
+  }
+
+  /**
+   * Send a message
+   * @param content The content of the message
+   * @param options The options for the message
+   */
+  public async send(content: string, options?: SendOptions): Promise<Discord.Message>;
+
+  /**
+   * Send a message
+   * @param options The options for the message
+   */
+  public async send(options: SendOptions): Promise<Discord.Message>;
+
+  public async send(content: string | SendOptions, options: SendOptions = {}) {
+    let actualContent = content;
+    let actualOptions = options;
+
+    if (!options && Util.isObject(content)) {
+      actualContent = '';
+      actualOptions = content as SendOptions;
+    } else {
+      actualOptions = {};
+    }
+
+    const responses = this.responses.get(this.message.id)!;
+    const message = (await this.message.channel.send(
+      actualContent,
+      actualOptions,
+    )) as Discord.Message;
+
+    responses.push(message);
+
+    return message;
   }
 }

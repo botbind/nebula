@@ -1,4 +1,5 @@
-import { Monitor, Addon, Message } from '../..';
+import Discord from 'discord.js';
+import { Monitor, Addon } from '../..';
 
 export default class LevelMonitor extends Monitor {
   private userLevels: Map<string, [number, number]>;
@@ -9,7 +10,7 @@ export default class LevelMonitor extends Monitor {
     this.userLevels = new Map();
   }
 
-  public async didDispatch(message: Message) {
+  public async didDispatch(message: Discord.Message) {
     const { id } = message.author;
     const userLevel = this.userLevels.get(id);
 
@@ -19,7 +20,7 @@ export default class LevelMonitor extends Monitor {
       const [count, level] = userLevel;
 
       if (count + 1 >= 2) {
-        message.send(
+        message.channel.send(
           `Congrats <@${id}>, you just earned a new level! Your current level: ${level + 1}`,
         );
         this.userLevels.set(id, [0, level + 1]);

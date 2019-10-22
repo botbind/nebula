@@ -1,7 +1,7 @@
+import Discord from 'discord.js';
 import Command from './Command';
 import Addon from './Addon';
 import Monitor, { OptionalMonitorOptions } from './Monitor';
-import Message from './Message';
 import Util from './Util';
 import NebulaError from './NebulaError';
 import { ValidationResults, ValidationErrors } from './Validator';
@@ -14,14 +14,19 @@ export type CommandComponents = [string, string, string[]];
 
 export default class Dispatcher extends Monitor {
   /**
+   * The history of the commands being dispatched for a message
+   */
+  public commandHistory: Discord.Collection<string, Command[]>;
+
+  /**
    * Invoked when the command name doesn't resolve to any commands
    */
   protected async didResolveCommandsUnsuccessfully(
-    message: Message,
+    message: Discord.Message,
     name: string,
     parent?: string,
   ) {
-    message.send(
+    message.channel.send(
       `Cannot find command "${name}" from ${this.addon.name} ${
         parent ? `of parent ${parent}` : ''
       }`,
@@ -34,34 +39,42 @@ export default class Dispatcher extends Monitor {
    */
   constructor(addon: Addon, options: OptionalMonitorOptions = {}) {
     super(addon, options);
+
+    this.commandHistory = new Discord.Collection();
   }
 
   /**
    * Dispatch commands based on messages.
    * @param message The created message
    */
-  public async didDispatch(message: Message) {
+  public async didDispatch(message: Discord.Message) {
     const [commandPrefix, commandName, commandArgs] = this.parseCommand(message.content);
 
     if (commandPrefix !== this.addon.client.options.prefix) return;
 
     // We allow multiple commands to be ran at the same time
-    const commands = this.addon.store.commands.filter(({ resource }) => {
-      const command = resource as Command;
-
-      return command.name === commandName || command.alias.includes(commandName);
-    });
+    const commands = this.addon.store.commands.filter(
+      command => command.name === commandName || command.alias.includes(commandName),
+    );
 
     if (commands.length === 0) {
       if (this.didResolveCommandsUnsuccessfully)
         this.didResolveCommandsUnsuccessfully(message, commandName);
+
       return;
     }
 
     if (this.addon.client.options.typing) message.channel.startTyping();
 
-    commands.forEach(({ resource }) => {
-      const command = resource as Command;
+    this.deletePrevResponse(message);
+
+    this.commandHistory.set(message.id, commands);
+
+    commands.forEach(command => {
+      command.responses.set(message.id, []);
+
+      // eslint-disable-next-line no-param-reassign
+      command.message = message;
 
       this._dispatchCommandsRecursively(command, message, commandArgs);
     });
@@ -69,7 +82,11 @@ export default class Dispatcher extends Monitor {
     if (this.addon.client.options.typing) message.channel.stopTyping();
   }
 
-  private async _dispatchCommandsRecursively(command: Command, message: Message, args: string[]) {
+  private async _dispatchCommandsRecursively(
+    command: Command,
+    message: Discord.Message,
+    args: string[],
+  ) {
     if (command.instantiatedSubcommands.length) {
       const [subcommandName, ...rest] = args;
 
@@ -101,21 +118,11 @@ export default class Dispatcher extends Monitor {
 
       this._dispatchCommandsRecursively(subcommand, message, rest);
     } else {
-      // Initial arps collection
-      // Stop indicator of the arp must be set to false here since instead of inside the message,
-      // due to the async nature of message.send()
-      const responseCollection = this.addon.client.arp.get(message.id);
-      if (!responseCollection) this.addon.client.arp.set(message.id, [false, []]);
+      if (command.willDispatch) command.willDispatch();
 
-      if (command.willDispatch) command.willDispatch(message);
+      const shouldDispatch = await command.composeInhibitors();
 
-      const shouldDispatch = await command.composeInhibitors(message);
-
-      if (!shouldDispatch) {
-        // Whenever the function returns, stop collection immediately
-        this._stopArpCollection(message);
-        return;
-      }
+      if (!shouldDispatch) return;
 
       let validatedArgs;
 
@@ -133,7 +140,6 @@ export default class Dispatcher extends Monitor {
 
         if (errors.length) {
           command.didCatchValidationErrors(
-            message,
             errors.reduce(
               (res, [key, result]) => {
                 res[key] = result;
@@ -144,7 +150,6 @@ export default class Dispatcher extends Monitor {
             ),
           );
 
-          this._stopArpCollection(message);
           return;
         }
 
@@ -152,13 +157,12 @@ export default class Dispatcher extends Monitor {
       }
 
       if (command.didDispatch == null) {
-        this._stopArpCollection(message);
         return;
       }
 
       let isSuccessfullyDispatched = true;
       try {
-        const dispatchResult = await command.didDispatch(message, validatedArgs);
+        const dispatchResult = await command.didDispatch(validatedArgs);
 
         if (dispatchResult instanceof Error || (dispatchResult !== undefined && !dispatchResult))
           isSuccessfullyDispatched = false;
@@ -167,19 +171,29 @@ export default class Dispatcher extends Monitor {
       }
 
       if (!isSuccessfullyDispatched) {
-        if (command.didDispatchUnsuccessfully)
-          await command.didDispatchUnsuccessfully(message, validatedArgs);
-      } else if (command.didDispatchSuccessfully)
-        await command.didDispatchSuccessfully(message, validatedArgs);
-
-      this._stopArpCollection(message);
+        if (command.didDispatchUnsuccessfully) command.didDispatchUnsuccessfully(validatedArgs);
+      } else if (command.didDispatchSuccessfully) command.didDispatchSuccessfully(validatedArgs);
     }
   }
 
-  private _stopArpCollection(message: Message) {
-    const [, responses] = this.addon.client.arp.get(message.id)!;
+  /**
+   * Delete the responses of the previous command
+   */
+  public deletePrevResponse(message: Discord.Message) {
+    const prevCommands = this.commandHistory.get(message.id);
 
-    this.addon.client.arp.set(message.id, [true, responses]);
+    if (prevCommands) {
+      prevCommands.forEach(command => {
+        const responses = command.responses.get(message.id)!;
+
+        responses
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          .filter(response => !(response as any).deleted)
+          .forEach(response => response.delete());
+
+        command.responses.set(message.id, []);
+      });
+    }
   }
 
   /**

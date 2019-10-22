@@ -1,7 +1,7 @@
+import Discord from 'discord.js';
 import merge from 'lodash.merge';
 import Addon from './Addon';
 import Resource from './Resource';
-import Message from './Message';
 import Util from './Util';
 import NebulaError from './NebulaError';
 
@@ -46,7 +46,7 @@ export default abstract class Monitor extends Resource {
    * Whether the monitor should be dispatched
    * @param message The created message
    */
-  public async shouldDispatch(message: Message) {
+  public async shouldDispatch(message: Discord.Message) {
     return (
       (!this.options.ignoreBots || !message.author.bot) &&
       (!this.options.ignoreSelf || message.author !== this.addon.client.user) &&
@@ -58,7 +58,7 @@ export default abstract class Monitor extends Resource {
    * Invoked when the monitor is dispatched
    * @param message The created message
    */
-  public abstract async didDispatch(message: Message): Promise<void>;
+  public abstract async didDispatch(message: Discord.Message): Promise<void>;
 
   /**
    * The base structure for all Nebula monitors

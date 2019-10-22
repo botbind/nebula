@@ -1,4 +1,4 @@
-import { Command, Addon, Message } from '../..';
+import { Command, Addon } from '../..';
 
 export default class GuildLimitCommand extends Command {
   constructor(addon: Addon) {
@@ -11,12 +11,14 @@ export default class GuildLimitCommand extends Command {
     });
   }
 
-  public async willDispatch(message: Message) {
-    message.send('Test suites for guild limit');
+  public async willDispatch() {
+    this.send('Test suites for guild limit');
   }
 
-  public async didDispatch(message: Message) {
-    message.send(
+  public async didDispatch() {
+    const message = this.message!;
+
+    this.send(
       `You have ${this.options.limit.bucket -
         this.usage.get(message.guild.id)![0]} time(s) left before cooling down. Scope: Guild`,
     );

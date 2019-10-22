@@ -3,9 +3,6 @@ import merge from 'lodash.merge';
 import Util from './Util';
 import NebulaAddon from './Addon';
 import NebulaError from './NebulaError';
-import Command from './Command';
-import Message from './Message';
-import createExtensions from './internals/createExtensions';
 import { Constructor } from './types';
 
 interface BaseClientOptions {
@@ -32,12 +29,12 @@ interface BaseClientOptions {
   /**
    * Whether the commands should be dispatched when the user edits the activating message
    */
-  dispatchOnEdit?: boolean;
+  commandEditable?: boolean;
 
   /**
    * Whether the commands should be deleted when the user deletes the activating message
    */
-  deletable?: boolean;
+  commandDeletable?: boolean;
 }
 
 /**
@@ -55,8 +52,8 @@ const defaultOptions: ClientOptions = {
   prefix: '!',
   debug: process.env.NODE_ENV === 'development',
   owners: [],
-  dispatchOnEdit: false,
-  deletable: false,
+  commandEditable: false,
+  commandDeletable: false,
 };
 
 const loadedAddons: NebulaAddon[] = [];
@@ -70,17 +67,12 @@ export default class Client extends Discord.Client {
   /**
    * The application of the client
    */
-  public app: Discord.OAuth2Application | null;
-
-  /**
-   * The activator/responses pairs of the client
-   */
-  public arp: Discord.Collection<string, [boolean, Message[]]>;
+  public app?: Discord.OAuth2Application | null;
 
   /**
    * Invoked when the client becomes ready to start working
    */
-  protected async willReady?(): Promise<void>;
+  protected async didReady?(): Promise<void>;
 
   /**
    * The main hub for loading addons
@@ -95,36 +87,18 @@ export default class Client extends Discord.Client {
     super(mergedOptions);
 
     this.options = mergedOptions;
-    this.app = null;
-    this.arp = new Discord.Collection();
 
-    this.prependOnceListener('ready', async () => {
+    this.once('ready', async () => {
       const app = await this.fetchApplication();
 
       this.app = app;
 
-      createExtensions(this);
-
       if (!this.options.owners.includes(app.owner.id)) this.options.owners.push(app.owner.id);
 
-      if (this.willReady) this.willReady();
-    })
-      .prependListener('messageUpdate', (oldMessage: Message, newMessage: Message) => {
-        if (newMessage.content === oldMessage.content && !this.options.dispatchOnEdit) return;
+      if (this.didReady) this.didReady();
 
-        this.emit('message', newMessage);
-      })
-      .prependListener('messageDelete', (message: Message) => {
-        this.arp.sweep(([, responses], id) => {
-          if (id === message.id) {
-            responses.filter(response => !response.deleted).forEach(response => response.delete());
-
-            return true;
-          }
-
-          return false;
-        });
-      });
+      this.emit('ready');
+    });
   }
 
   /**
@@ -134,8 +108,8 @@ export default class Client extends Discord.Client {
     const permissions = new Discord.Permissions(3072);
 
     loadedAddons.forEach(addon => {
-      addon.store.commands.forEach(({ resource }) => {
-        permissions.add(...(resource as Command).options.requiredPermissions);
+      addon.store.commands.forEach(command => {
+        permissions.add(...command.options.requiredPermissions);
       });
     });
 
@@ -151,13 +125,6 @@ export default class Client extends Discord.Client {
   protected inject(...addons: Constructor<NebulaAddon>[]) {
     if (addons.length === 0) throw new NebulaError('At least 1 addon must be specified');
 
-    loadedAddons.push(
-      ...addons.map(Addon => {
-        if (!(Addon.prototype instanceof NebulaAddon))
-          throw new NebulaError('The addon to be loaded must inherit the Addon structure');
-
-        return new Addon(this);
-      }),
-    );
+    loadedAddons.push(...addons.map(Addon => new Addon(this)));
   }
 }

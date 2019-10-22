@@ -6,6 +6,19 @@ export default class Resource {
    */
   protected addon: Addon;
 
+  private _group?: string;
+
+  /**
+   * The group of the resource
+   */
+  get group() {
+    return this._group!;
+  }
+
+  set group(group: string) {
+    this._group = group;
+  }
+
   /**
    * Invoked when the resource becomes ready to start working
    */

@@ -27,6 +27,7 @@ module.exports = {
   rules: {
     'no-underscore-dangle': 'off',
     'class-methods-use-this': 'off',
+    'no-dupe-class-members': 'off', // Allows methods overloading
     'no-console': 'off',
     'no-restricted-syntax': 'off', // Allows for ... of usage
     'no-await-in-loop': 'off',

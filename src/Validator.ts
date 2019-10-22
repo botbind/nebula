@@ -1,5 +1,5 @@
+import Discord from 'discord.js';
 import merge from 'lodash.merge';
-import Message from './Message';
 import BooleanValidator from './BooleanValidator';
 import NumberValidator from './NumberValidator';
 import StringValidator from './StringValidator';
@@ -59,7 +59,7 @@ export interface ValidationRuleArguments<T extends Primitives> {
   /**
    * The created message
    */
-  message: Message;
+  message: Discord.Message;
 }
 
 /**
@@ -139,7 +139,7 @@ export default class Validator {
    * @param schema The validation schema
    */
   public validate(
-    message: Message,
+    message: Discord.Message,
     values: string[],
     schema: Schema,
   ): ValidationResults | ValidationErrors {
@@ -184,7 +184,7 @@ export default class Validator {
       const currRawValue = values[i];
 
       // Empty the errors array
-      currValidator.errs.length = 0;
+      currValidator.errs = [];
 
       for (const rule of currValidator.rules) {
         const result = (rule as ValidationRule)({

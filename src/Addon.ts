@@ -1,12 +1,12 @@
+import Discord from 'discord.js';
 import Client from './Client';
 import NebulaStore from './Store';
 import NebulaDispatcher from './Dispatcher';
 import Util from './Util';
 import NebulaPermissions from './Permissions';
+import Event from './Event';
 import NebulaError from './NebulaError';
 import NebulaValidator from './Validator';
-import Event from './Event';
-import Monitor from './Monitor';
 import { Constructor } from './types';
 
 /**
@@ -62,6 +62,11 @@ export default class Addon {
   public permissions: NebulaPermissions;
 
   /**
+   * The dispatcher of the addon
+   */
+  public dispatcher: NebulaDispatcher;
+
+  /**
    * The name of the addon
    */
   public name: string;
@@ -70,11 +75,6 @@ export default class Addon {
    * The options of the addon
    */
   public options: AddonOptions;
-
-  /**
-   * Invoked when the addon becomes ready to start working
-   */
-  public async didReady?(): Promise<void>;
 
   /**
    * The entry point of all Nebula resources
@@ -98,31 +98,69 @@ export default class Addon {
     this.store = Store ? new Store(this) : new NebulaStore(this);
     this.validator = Validator ? new Validator() : new NebulaValidator();
     this.permissions = Permission ? new Permission(this) : new NebulaPermissions(this);
-
-    this.store.monitors.push({
-      resource: Dispatcher ? new Dispatcher(this) : new NebulaDispatcher(this),
-      group: 'nebula-ignore',
-    });
+    this.dispatcher = Dispatcher ? new Dispatcher(this) : new NebulaDispatcher(this);
 
     // Has to be done after the addon has done loading other classes
     this.store.load();
 
-    this.store.events.forEach(({ resource }) => {
-      const event = resource as Event;
-      const prependMethod = event.options.once ? 'prependOnceListener' : 'prependListener';
+    const eventsByName = new Discord.Collection<string, Event[]>();
 
-      this.client[prependMethod](event.name, event.didDispatch);
+    this.store.events.forEach(event => {
+      const fetchedEvent = eventsByName.get(event.name);
+
+      if (fetchedEvent == null) eventsByName.set(event.name, [event]);
+      else fetchedEvent.push(event);
     });
 
-    this.client.emit('ready');
-    this.client.prependListener('message', async message => {
-      const shouldDispatches = await Promise.all(
-        this.store.monitors.map(({ resource }) => (resource as Monitor).shouldDispatch(message)),
-      );
+    // Trying having as few event listeners as possible
+    eventsByName.forEach((events, eventName) => {
+      const onEvents: Event[] = [];
+      const onceEvents = events.filter(event => {
+        if (event.options.once) return true;
 
-      shouldDispatches.forEach((shouldDispatch, i) => {
-        if (shouldDispatch) (this.store.monitors[i].resource as Monitor).didDispatch(message);
+        onEvents.push(event);
+
+        return false;
       });
+
+      if (onEvents.length > 0)
+        this.client.on(eventName, (...args: unknown[]) => {
+          onEvents.forEach(event => event.didDispatch(...args));
+        });
+
+      if (onceEvents.length > 0)
+        this.client.once(eventName, (...args: unknown[]) => {
+          onceEvents.forEach(event => event.didDispatch(...args));
+        });
     });
+
+    this.client
+      .on('message', async message => {
+        const shouldDispatches = await Promise.all(
+          this.store.monitors.map(monitor => monitor.shouldDispatch(message)),
+        );
+
+        shouldDispatches.forEach((shouldDispatch, i) => {
+          if (shouldDispatch) this.store.monitors[i].didDispatch(message);
+        });
+
+        this._runDispatcher(message);
+      })
+      .on('messageUpdate', (oldMessage, newMessage) => {
+        if (oldMessage.content === newMessage.content || !this.client.options.commandEditable)
+          return;
+
+        this._runDispatcher(newMessage);
+      })
+      .on('messageDelete', message => {
+        this.dispatcher.deletePrevResponse(message);
+        this.dispatcher.commandHistory.delete(message.id);
+      });
+  }
+
+  private async _runDispatcher(message: Discord.Message) {
+    const shouldDispatch = await this.dispatcher.shouldDispatch(message);
+
+    if (shouldDispatch) this.dispatcher.didDispatch(message);
   }
 }
