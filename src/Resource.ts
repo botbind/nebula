@@ -20,15 +20,18 @@ export default class Resource {
   }
 
   /**
-   * Invoked when the resource becomes ready to start working
-   */
-  public async didReady?(): Promise<void>;
-
-  /**
    * The base structure for all Nebula resources
    * @param addon The addon of the resource
    */
   constructor(addon: Addon) {
     this.addon = addon;
+
+    // Allows async function to be executed when the resource is ready
+    if (this.didReady) this.didReady();
   }
+
+  /**
+   * Invoked when the resource becomes ready to start working
+   */
+  protected async didReady?(): Promise<void>;
 }

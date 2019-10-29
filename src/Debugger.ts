@@ -7,6 +7,8 @@ import dayjs from 'dayjs';
  */
 export type LogTypes = 'success' | 'warn' | 'error' | 'info' | 'log';
 
+const isDev = process.env.NODE_ENV === 'development';
+
 /**
  * The Nebula debugger, an extension of the node console
  */
@@ -48,7 +50,7 @@ export default class Debugger {
    * @param category The category of the message
    */
   public static info(message: any, category?: string) {
-    console.log(Debugger._interpolateMessage(message, 'info', category));
+    if (isDev) console.log(Debugger._interpolateMessage(message, 'info', category));
   }
 
   /**
@@ -57,7 +59,7 @@ export default class Debugger {
    * @param category The category of the message
    */
   public static warn(message: any, category?: string) {
-    console.log(Debugger._interpolateMessage(message, 'warn', category));
+    if (isDev) console.log(Debugger._interpolateMessage(message, 'warn', category));
   }
 
   /**
@@ -66,7 +68,7 @@ export default class Debugger {
    * @param category The category of the message
    */
   public static error(message: any, category?: string) {
-    console.log(Debugger._interpolateMessage(message, 'error', category));
+    if (isDev) console.log(Debugger._interpolateMessage(message, 'error', category));
   }
 
   /**
@@ -75,7 +77,7 @@ export default class Debugger {
    * @param category The category of the message
    */
   public static log(message: any, category?: string) {
-    console.log(Debugger._interpolateMessage(message, 'log', category));
+    if (isDev) console.log(Debugger._interpolateMessage(message, 'log', category));
   }
 
   /**
@@ -84,6 +86,6 @@ export default class Debugger {
    * @param category The category of the message
    */
   public static success(message: any, category?: string) {
-    console.log(Debugger._interpolateMessage(message, 'success', category));
+    if (isDev) console.log(Debugger._interpolateMessage(message, 'success', category));
   }
 }

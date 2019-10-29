@@ -2,9 +2,12 @@ import Discord from 'discord.js';
 import merge from 'lodash.merge';
 import Addon from './Addon';
 import Resource from './Resource';
+import CommandMessage from './CommandMessage';
 import Util from './Util';
+import Debugger from './Debugger';
 import NebulaError from './NebulaError';
 import { Schema, ValidationResults, ValidationErrors } from './Validator';
+import ValidationError from './ValidationError';
 import { Constructor, RequiredExcept } from './types';
 
 /**
@@ -150,8 +153,6 @@ const defaultOptions: CommandOptions = {
   requiredPermissions: [],
 };
 
-type SendOptions = Discord.MessageOptions | Discord.RichEmbed | Discord.Attachment;
-
 export default class Command extends Resource {
   /**
    * The name of the command
@@ -183,129 +184,7 @@ export default class Command extends Resource {
    */
   public instantiatedSubcommands: Command[];
 
-  /**
-   * The responses to an activator of the command
-   */
-  public responses: Discord.Collection<string, Discord.Message[]>;
-
   private _sweepInterval: NodeJS.Timeout | null;
-
-  private _message?: Discord.Message;
-
-  /**
-   * The activating message of the command
-   */
-  get message() {
-    return this._message!;
-  }
-
-  set message(message: Discord.Message) {
-    this._message = message;
-  }
-
-  /**
-   * Invoked after the command is inhibited due to it being run in a non-nsfw channel
-   * @param message The created message
-   */
-  protected async didInhibitNSFW() {
-    this.send('This command should only be sent in a NSFW channel');
-  }
-
-  /**
-   * Invoked after the command is inhibited due to excess usage per user
-   * @param message The created message
-   */
-  protected async didInhibitUsage() {
-    const id =
-      this.options.limit.scope === 'guild' ? this.message.guild.id : this.message.author.id;
-    const timeLeft = (this.options.limit.time - (Date.now() - this.usage.get(id)![1])) / 1000;
-
-    this.send(`You have ${timeLeft} seconds left before you can run this command again`);
-  }
-
-  /**
-   * Invoked after the command is inhibited due to not enough permissions
-   */
-  protected async didInhibitPerm() {
-    return this.send('You are not allowed to run this command!');
-  }
-
-  /**
-   * Invoked when the user arguments don't meet the validation schema
-   * @param validationErrs The validation erros.
-   */
-  public async didCatchValidationErrors(validationErrs: ValidationErrors) {
-    Object.values(validationErrs).forEach(errs => {
-      errs.forEach(err => {
-        this.send(err.message);
-      });
-    });
-  }
-
-  /**
-   * Invoked when the command before the command is processed
-   */
-  public async willDispatch?(): Promise<void>;
-
-  /**
-   * Whether the command should be dispatched
-   */
-  public async shouldDispatch?(): Promise<boolean>;
-
-  /**
-   * Invoked when the command is dispatched
-   * @param args The user arguments
-   */
-  public async didDispatch?(args?: ValidationResults): Promise<void | boolean | Error>;
-
-  /**
-   * Invoked when the command is successfully dispatched
-   * @param args The user arguments
-   */
-  public async didDispatchSuccessfully?(args?: ValidationResults): Promise<void>;
-
-  /**
-   * Invoked when the command fails
-   * @param args The user arguments
-   */
-  public async didDispatchUnsuccessfully?(args?: ValidationResults): Promise<void>;
-
-  /**
-   * Compose the inhibitors and run shouldDispatch under the hood
-   */
-  public async composeInhibitors() {
-    let shouldDispatch = true;
-
-    if (this.shouldDispatch) shouldDispatch = await this.shouldDispatch();
-
-    if (!shouldDispatch) return false;
-
-    const allowUsage = await this.allowUsage();
-
-    if (!allowUsage) {
-      this.didInhibitUsage();
-
-      return false;
-    }
-
-    const allowNSFW = await this.allowNSFW();
-
-    if (!allowNSFW) {
-      this.didInhibitNSFW();
-
-      return false;
-    }
-
-    const allowPerm = await this.allowPerm();
-
-    if (!allowPerm) {
-      this.didInhibitPerm();
-
-      return false;
-    }
-
-    return true;
-  }
 
   /**
    * The base structure for all Nebula commands
@@ -344,6 +223,11 @@ export default class Command extends Resource {
         'The permission level must be specified when permission options are specified',
       );
 
+    if (options.schema != null) {
+      if (!Util.isObject(options.schema))
+        throw new NebulaError(`The validation schema must be an object with validators`);
+    }
+
     super(addon);
 
     const mergedOptions = merge({}, defaultOptions, options);
@@ -356,7 +240,6 @@ export default class Command extends Resource {
     this.options = mergedOptions;
     this.usage = new Discord.Collection();
     this._sweepInterval = null;
-    this.responses = new Discord.Collection();
 
     this.instantiatedSubcommands = this.options.subcommands.commands.map(Subcommand => {
       if (!(Subcommand.prototype instanceof Command))
@@ -374,12 +257,11 @@ export default class Command extends Resource {
   /**
    * Whether the command is allowed to dispatch considering the limit usage
    */
-  protected async allowUsage() {
+  protected async allowUsage(message: CommandMessage) {
     if (this.options.limit.time === 0) return true;
 
     const currTime = Date.now();
-    const id =
-      this.options.limit.scope === 'guild' ? this.message.guild.id : this.message.author.id;
+    const id = this.options.limit.scope === 'guild' ? message.guild.id : message.author.id;
     const usage = this.usage.get(id);
 
     if (usage) {
@@ -419,55 +301,218 @@ export default class Command extends Resource {
   /**
    * Whether the command is allowed to dispatch in a non-nsfw channel if marked nsfw
    */
-  protected async allowNSFW() {
-    return !this.options.nsfw || (this.message.channel as Discord.TextChannel).nsfw;
+  protected async allowNSFW(message: CommandMessage) {
+    return !this.options.nsfw || (message.channel as Discord.TextChannel).nsfw;
   }
 
   /**
    * Whether the command is allowed to dispatch considering the permission levels
    * @param message The created message
    */
-  protected async allowPerm() {
+  protected async allowPerm(message: CommandMessage) {
     const permissionLevel = this.options.permission.level;
 
     if (this.options.permission.exact)
-      return this.addon.permissions.checkExact(permissionLevel, this.message);
+      return this.addon.permissions.checkExact(permissionLevel, message.message);
 
-    return this.addon.permissions.check(permissionLevel, this.message);
+    return this.addon.permissions.check(permissionLevel, message.message);
   }
 
   /**
-   * Send a message
-   * @param content The content of the message
-   * @param options The options for the message
+   * Call all the lifecycle methods
+   * @param message The created message
+   * @param args The parsed user arguments
    */
-  public async send(content: string, options?: SendOptions): Promise<Discord.Message>;
+  public async callLifecycles(message: CommandMessage, args: string[]) {
+    const constructorName = this.constructor.name;
 
-  /**
-   * Send a message
-   * @param options The options for the message
-   */
-  public async send(options: SendOptions): Promise<Discord.Message>;
+    // We have to use await on lifecycle methods for safety reasons
+    // This allows right execution order and command editing to work
+    if (this.willDispatch != null) {
+      Debugger.info(`${constructorName} willDispatch`, 'Lifecycle');
 
-  public async send(content: string | SendOptions, options: SendOptions = {}) {
-    let actualContent = content;
-    let actualOptions = options;
-
-    if (!options && Util.isObject(content)) {
-      actualContent = '';
-      actualOptions = content as SendOptions;
-    } else {
-      actualOptions = {};
+      await this.willDispatch(message);
     }
 
-    const responses = this.responses.get(this.message.id)!;
-    const message = (await this.message.channel.send(
-      actualContent,
-      actualOptions,
-    )) as Discord.Message;
+    let shouldDispatch = true;
 
-    responses.push(message);
+    if (this.shouldDispatch) {
+      Debugger.info(`${constructorName} shouldDispatch`, 'Lifecycle');
 
-    return message;
+      shouldDispatch = await this.shouldDispatch(message);
+    }
+
+    if (!shouldDispatch) return;
+
+    const allowUsage = await this.allowUsage(message);
+
+    if (!allowUsage) {
+      Debugger.info(`${constructorName} didInhibitUsage`, 'Lifecycle');
+
+      await this.didInhibitUsage(message);
+
+      return;
+    }
+
+    const allowNSFW = await this.allowNSFW(message);
+
+    if (!allowNSFW) {
+      Debugger.info(`${constructorName} didInhibitNSFW`, 'Lifecycle');
+
+      await this.didInhibitNSFW(message);
+
+      return;
+    }
+
+    const allowPerm = await this.allowPerm(message);
+
+    if (!allowPerm) {
+      Debugger.info(`${constructorName} didInhibitPerm`, 'Lifecycle');
+
+      await this.didInhibitPerm(message);
+
+      return;
+    }
+
+    let validatedArgs;
+
+    if (this.options.schema) {
+      const results = this.addon.validator.validate(message.message, args, this.options.schema);
+      const errors = Util.entriesOf(results).filter(([, result]) => Util.isArray(result)) as [
+        string,
+        ValidationError[],
+      ][];
+
+      if (errors.length) {
+        Debugger.info(`${constructorName} didCatchValidationErrors`, 'Lifecycle');
+
+        await this.didCatchValidationErrors(
+          message,
+          errors.reduce(
+            (res, [key, result]) => {
+              res[key] = result;
+
+              return res;
+            },
+            {} as ValidationErrors,
+          ),
+        );
+
+        return;
+      }
+
+      validatedArgs = results as ValidationResults;
+    }
+
+    if (this.didDispatch == null) return;
+
+    let isSuccessfullyDispatched = true;
+
+    // Here we use try...catch statement to improve DX: This allows the devs to throw an error and
+    // it would have the same effect as returning it for returning false
+    try {
+      Debugger.info(`${constructorName} didDispatch`, 'Lifecycle');
+
+      const dispatchResult = await this.didDispatch(message, validatedArgs);
+
+      if (dispatchResult instanceof Error || (dispatchResult !== undefined && !dispatchResult))
+        isSuccessfullyDispatched = false;
+    } catch (err) {
+      Debugger.error(err);
+      isSuccessfullyDispatched = false;
+    }
+
+    if (!isSuccessfullyDispatched) {
+      if (this.didDispatchUnsuccessfully) {
+        Debugger.info(`${constructorName} didDispatchUnsuccessfully`, 'Lifecycle');
+
+        await this.didDispatchUnsuccessfully(message, validatedArgs);
+      }
+    } else if (this.didDispatchSuccessfully) {
+      Debugger.info(`${constructorName} didDispatchSuccessfully`, 'Lifecycle');
+
+      await this.didDispatchSuccessfully(message, validatedArgs);
+    }
   }
+
+  /**
+   * Invoked after the command is inhibited due to it being run in a non-nsfw channel
+   * @param message The created message
+   */
+  protected async didInhibitNSFW(message: CommandMessage) {
+    message.send('This command should only be sent in a NSFW channel');
+  }
+
+  /**
+   * Invoked after the command is inhibited due to excess usage per user
+   * @param message The created message
+   */
+  protected async didInhibitUsage(message: CommandMessage) {
+    console.log('Inhibit');
+    const id = this.options.limit.scope === 'guild' ? message.guild.id : message.author.id;
+    const timeLeft = (this.options.limit.time - (Date.now() - this.usage.get(id)![1])) / 1000;
+
+    message.send(`You have ${timeLeft} seconds left before you can run this command again`);
+  }
+
+  /**
+   * Invoked after the command is inhibited due to not enough permissions
+   * @param message The created message
+   */
+  protected async didInhibitPerm(message: CommandMessage) {
+    message.send('You are not allowed to run this command!');
+  }
+
+  /**
+   * Invoked when the user arguments don't meet the validation schema
+   * @param message The created message
+   * @param validationErrs The validation erros.
+   */
+  protected async didCatchValidationErrors(
+    message: CommandMessage,
+    validationErrs: ValidationErrors,
+  ) {
+    Object.values(validationErrs).forEach(errs => {
+      errs.forEach(err => {
+        message.send(err.message);
+      });
+    });
+  }
+
+  /**
+   * Invoked when the command before the command is processed
+   */
+  protected async willDispatch?(message: CommandMessage): Promise<void>;
+
+  /**
+   * Whether the command should be dispatched
+   */
+  protected async shouldDispatch?(message: CommandMessage): Promise<boolean>;
+
+  /**
+   * Invoked when the command is dispatched
+   * @param args The user arguments
+   */
+  protected async didDispatch?(
+    message: CommandMessage,
+    args?: ValidationResults,
+  ): Promise<void | boolean | Error>;
+
+  /**
+   * Invoked when the command is successfully dispatched
+   * @param args The user arguments
+   */
+  protected async didDispatchSuccessfully?(
+    message: CommandMessage,
+    args?: ValidationResults,
+  ): Promise<void>;
+
+  /**
+   * Invoked when the command fails
+   * @param args The user arguments
+   */
+  protected async didDispatchUnsuccessfully?(
+    message: CommandMessage,
+    args?: ValidationResults,
+  ): Promise<void>;
 }

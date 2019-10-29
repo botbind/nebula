@@ -186,8 +186,6 @@ export default class Store extends Discord.Collection<ResourceTypes, NebulaResou
         // Do not load subcommands
         if (type === 'commands' && (resource as Command).options.isSubcommand) return;
 
-        if (resource.didReady) resource.didReady();
-
         this.get(type)!.push(resource);
       }
     }

@@ -4,10 +4,10 @@ import { Client } from '..';
 
 class TestClient extends Client {
   protected async didReady() {
-    this.inject(TestAddon);
+    this.inject(new TestAddon(this));
   }
 }
 
-const client = new TestClient({ debug: true, typing: true, commandEditable: true });
+const client = new TestClient({ typing: true, commandEditable: true });
 
 client.login(process.env.DISCORD_TOKEN);

@@ -3,6 +3,7 @@ import merge from 'lodash.merge';
 import Addon from './Addon';
 import Resource from './Resource';
 import Util from './Util';
+import Debugger from './Debugger';
 import NebulaError from './NebulaError';
 
 /**
@@ -43,24 +44,6 @@ export default abstract class Monitor extends Resource {
   public options: MonitorOptions;
 
   /**
-   * Whether the monitor should be dispatched
-   * @param message The created message
-   */
-  public async shouldDispatch(message: Discord.Message) {
-    return (
-      (!this.options.ignoreBots || !message.author.bot) &&
-      (!this.options.ignoreSelf || message.author !== this.addon.client.user) &&
-      (!this.options.ignoreWebhooks || message.webhookID == null)
-    );
-  }
-
-  /**
-   * Invoked when the monitor is dispatched
-   * @param message The created message
-   */
-  public abstract async didDispatch(message: Discord.Message): Promise<void>;
-
-  /**
    * The base structure for all Nebula monitors
    * @param addon The addon of the monitor
    * @param options The options for the monitor
@@ -73,4 +56,38 @@ export default abstract class Monitor extends Resource {
 
     this.options = merge({}, defaultOptions, options);
   }
+
+  /**
+   * Call all the lifecycle methods
+   * @param message The created message
+   */
+  public async callLifecycles(message: Discord.Message) {
+    const constructorName = this.constructor.name;
+
+    Debugger.info(`${constructorName} shouldDispatch`, 'Lifecycle');
+
+    const shouldDispatch = await this.shouldDispatch(message);
+
+    Debugger.info(`${constructorName} didDispatch`, 'Lifecycle');
+
+    if (shouldDispatch) this.didDispatch(message);
+  }
+
+  /**
+   * Whether the monitor should be dispatched
+   * @param message The created message
+   */
+  protected async shouldDispatch(message: Discord.Message) {
+    return (
+      (!this.options.ignoreBots || !message.author.bot) &&
+      (!this.options.ignoreSelf || message.author !== this.addon.client.user) &&
+      (!this.options.ignoreWebhooks || message.webhookID == null)
+    );
+  }
+
+  /**
+   * Invoked when the monitor is dispatched
+   * @param message The created message
+   */
+  protected abstract async didDispatch(message: Discord.Message): Promise<void>;
 }

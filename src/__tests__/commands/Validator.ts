@@ -1,4 +1,4 @@
-import { Command, Addon, Validator, ValidationResults } from '../..';
+import { Command, Addon, Validator, ValidationResults, CommandMessage } from '../..';
 
 export default class ValidatorCommand extends Command {
   constructor(addon: Addon) {
@@ -10,11 +10,11 @@ export default class ValidatorCommand extends Command {
     });
   }
 
-  public async willDispatch() {
-    this.send('Test suites for Validator');
+  public async willDispatch(message: CommandMessage) {
+    message.send('Test suites for Validator');
   }
 
-  public async didDispatch({ mention }: ValidationResults) {
-    this.send(`Mention: ${mention}`);
+  public async didDispatch(message: CommandMessage, { mention }: ValidationResults) {
+    message.send(`Mention: ${mention}`);
   }
 }

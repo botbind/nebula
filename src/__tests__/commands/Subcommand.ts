@@ -1,4 +1,4 @@
-import { Command, Addon, Validator, ValidationResults } from '../..';
+import { Command, Addon, ValidationResults, CommandMessage, Validator } from '../..';
 
 class Child3 extends Command {
   constructor(addon: Addon) {
@@ -11,8 +11,8 @@ class Child3 extends Command {
     });
   }
 
-  public async didDispatch({ num }: ValidationResults) {
-    this.send(`This comes from child3. I accept arguments! ${num}`);
+  public async didDispatch(message: CommandMessage, { num }: ValidationResults) {
+    message.send(`This comes from child3. I accept arguments! ${num}`);
   }
 }
 
@@ -26,10 +26,6 @@ class Child1 extends Command {
       },
     });
   }
-
-  public async didDispatch() {
-    this.send('This comes from child1');
-  }
 }
 
 class Child2 extends Command {
@@ -40,8 +36,8 @@ class Child2 extends Command {
     });
   }
 
-  public async didDispatch() {
-    this.send('This comes from child2');
+  public async didDispatch(message: CommandMessage) {
+    message.send('This comes from child2');
   }
 }
 

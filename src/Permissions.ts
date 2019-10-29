@@ -50,7 +50,7 @@ export default class Permissions extends Discord.Collection<number, PermissionCh
    * @param message The created message
    */
   public async check(level: number, message: Discord.Message) {
-    for (const [permissionLevel, permissionCheck] of this.entries()) {
+    for (const [permissionLevel, permissionCheck] of this) {
       if (permissionLevel > level) {
         const result = await permissionCheck(message);
 

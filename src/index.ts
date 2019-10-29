@@ -8,6 +8,7 @@ export * from './Store';
 export { default as Store } from './Store';
 export * from './Command';
 export { default as Command } from './Command';
+export { default as CommandMessage } from './CommandMessage';
 export * from './Task';
 export { default as Task } from './Task';
 export * from './Monitor';

@@ -1,9 +1,9 @@
 import Discord from 'discord.js';
 import merge from 'lodash.merge';
 import Util from './Util';
-import NebulaAddon from './Addon';
+import Addon from './Addon';
+import Debugger from './Debugger';
 import NebulaError from './NebulaError';
-import { Constructor } from './types';
 
 interface BaseClientOptions {
   /**
@@ -15,11 +15,6 @@ interface BaseClientOptions {
    * The default prefix when the client first boots up
    */
   prefix?: string;
-
-  /**
-   * Whether the client should start in debug mode
-   */
-  debug?: boolean;
 
   /**
    * The discord ids for bot owners of the client
@@ -50,13 +45,12 @@ export type ClientOptions = Required<BaseClientOptions> & Discord.ClientOptions;
 const defaultOptions: ClientOptions = {
   typing: false,
   prefix: '!',
-  debug: process.env.NODE_ENV === 'development',
   owners: [],
   commandEditable: false,
   commandDeletable: false,
 };
 
-const loadedAddons: NebulaAddon[] = [];
+const loadedAddons: Addon[] = [];
 
 export default class Client extends Discord.Client {
   /**
@@ -68,11 +62,6 @@ export default class Client extends Discord.Client {
    * The application of the client
    */
   public app?: Discord.OAuth2Application | null;
-
-  /**
-   * Invoked when the client becomes ready to start working
-   */
-  protected async didReady?(): Promise<void>;
 
   /**
    * The main hub for loading addons
@@ -95,7 +84,11 @@ export default class Client extends Discord.Client {
 
       if (!this.options.owners.includes(app.owner.id)) this.options.owners.push(app.owner.id);
 
-      if (this.didReady) this.didReady();
+      if (this.didReady) {
+        Debugger.info(`${this.constructor.name} ready`, 'Lifecycle');
+
+        this.didReady();
+      }
 
       this.emit('ready');
     });
@@ -122,9 +115,14 @@ export default class Client extends Discord.Client {
    * Inject addons
    * @param addons The addons to load
    */
-  protected inject(...addons: Constructor<NebulaAddon>[]) {
+  protected inject(...addons: Addon[]) {
     if (addons.length === 0) throw new NebulaError('At least 1 addon must be specified');
 
-    loadedAddons.push(...addons.map(Addon => new Addon(this)));
+    loadedAddons.push(...addons);
   }
+
+  /**
+   * Invoked when the client becomes ready to start working
+   */
+  protected async didReady?(): Promise<void>;
 }

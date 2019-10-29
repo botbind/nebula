@@ -2,6 +2,7 @@ import Discord from 'discord.js';
 import Client from './Client';
 import NebulaStore from './Store';
 import NebulaDispatcher from './Dispatcher';
+import Debugger from './Debugger';
 import Util from './Util';
 import NebulaPermissions from './Permissions';
 import Event from './Event';
@@ -103,64 +104,44 @@ export default class Addon {
     // Has to be done after the addon has done loading other classes
     this.store.load();
 
-    const eventsByName = new Discord.Collection<string, Event[]>();
+    // Group event dispatchers
+    const onceEvents = new Discord.Collection<string, Event[]>();
+    const onEvents = new Discord.Collection<string, Event[]>();
 
     this.store.events.forEach(event => {
-      const fetchedEvent = eventsByName.get(event.name);
+      const eventCollection = event.options.once ? onceEvents : onEvents;
+      const fetchedEvent = eventCollection.get(event.name);
 
-      if (fetchedEvent == null) eventsByName.set(event.name, [event]);
+      if (fetchedEvent == null) eventCollection.set(event.name, [event]);
       else fetchedEvent.push(event);
     });
 
     // Trying having as few event listeners as possible
-    eventsByName.forEach((events, eventName) => {
-      const onEvents: Event[] = [];
-      const onceEvents = events.filter(event => {
-        if (event.options.once) return true;
-
-        onEvents.push(event);
-
-        return false;
+    onEvents.forEach((events, eventName) => {
+      this.client.on(eventName, (...args: unknown[]) => {
+        events.forEach(event => event.callLifecycles(...args));
       });
+    });
 
-      if (onEvents.length > 0)
-        this.client.on(eventName, (...args: unknown[]) => {
-          onEvents.forEach(event => event.didDispatch(...args));
-        });
-
-      if (onceEvents.length > 0)
-        this.client.once(eventName, (...args: unknown[]) => {
-          onceEvents.forEach(event => event.didDispatch(...args));
-        });
+    onceEvents.forEach((events, eventName) => {
+      this.client.once(eventName, (...args: unknown[]) => {
+        events.forEach(event => event.callLifecycles(...args));
+      });
     });
 
     this.client
       .on('message', async message => {
-        const shouldDispatches = await Promise.all(
-          this.store.monitors.map(monitor => monitor.shouldDispatch(message)),
-        );
+        this.store.monitors.forEach(monitor => monitor.callLifecycles(message));
 
-        shouldDispatches.forEach((shouldDispatch, i) => {
-          if (shouldDispatch) this.store.monitors[i].didDispatch(message);
-        });
-
-        this._runDispatcher(message);
+        this.dispatcher.callLifecycles(message);
       })
       .on('messageUpdate', (oldMessage, newMessage) => {
         if (oldMessage.content === newMessage.content || !this.client.options.commandEditable)
           return;
 
-        this._runDispatcher(newMessage);
-      })
-      .on('messageDelete', message => {
-        this.dispatcher.deletePrevResponse(message);
-        this.dispatcher.commandHistory.delete(message.id);
+        this.dispatcher.callLifecycles(newMessage);
       });
-  }
 
-  private async _runDispatcher(message: Discord.Message) {
-    const shouldDispatch = await this.dispatcher.shouldDispatch(message);
-
-    if (shouldDispatch) this.dispatcher.didDispatch(message);
+    Debugger.success(`${this.constructor.name} injected`);
   }
 }

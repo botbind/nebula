@@ -1,4 +1,4 @@
-import { Command, Addon } from '../..';
+import { Command, Addon, CommandMessage } from '../..';
 
 export default class PermissionCommand extends Command {
   constructor(addon: Addon) {
@@ -10,11 +10,11 @@ export default class PermissionCommand extends Command {
     });
   }
 
-  public async willDispatch() {
-    this.send('Test suites for permissions');
+  public async willDispatch(message: CommandMessage) {
+    message.send('Test suites for permissions');
   }
 
-  public async didDispatch() {
-    this.send('You are allowed to run this command');
+  public async didDispatch(message: CommandMessage) {
+    message.send('You are allowed to run this command');
   }
 }
