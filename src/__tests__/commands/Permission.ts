@@ -10,11 +10,11 @@ export default class PermissionCommand extends Command {
     });
   }
 
-  public async willDispatch(message: CommandMessage) {
+  protected async willDispatch(message: CommandMessage) {
     message.send('Test suites for permissions');
   }
 
-  public async didDispatch(message: CommandMessage) {
+  protected async didDispatch(message: CommandMessage) {
     message.send('You are allowed to run this command');
   }
 }

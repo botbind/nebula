@@ -9,7 +9,7 @@ export default class MessageEvent extends Event {
     });
   }
 
-  public async didDispatch(message: Discord.Message) {
+  protected async didDispatch(message: Discord.Message) {
     if (message.author.bot) return;
 
     message.channel.send('Hi, Im from event!');

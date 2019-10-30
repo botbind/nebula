@@ -11,11 +11,11 @@ export default class GuildLimitCommand extends Command {
     });
   }
 
-  public async willDispatch(message: CommandMessage) {
+  protected async willDispatch(message: CommandMessage) {
     message.send('Test suites for guild limit');
   }
 
-  public async didDispatch(message: CommandMessage) {
+  protected async didDispatch(message: CommandMessage) {
     message.send(
       `You have ${this.options.limit.bucket -
         this.usage.get(message.guild.id)![0]} time(s) left before cooling down. Scope: Guild`,

@@ -307,7 +307,7 @@ export default class Command extends Resource {
 
   /**
    * Whether the command is allowed to dispatch considering the permission levels
-   * @param message The created message
+   * @param message The Nebula message wrapper
    */
   protected async allowPerm(message: CommandMessage) {
     const permissionLevel = this.options.permission.level;
@@ -320,7 +320,7 @@ export default class Command extends Resource {
 
   /**
    * Call all the lifecycle methods
-   * @param message The created message
+   * @param message The Nebula message wrapper
    * @param args The parsed user arguments
    */
   public async callLifecycles(message: CommandMessage, args: string[]) {
@@ -437,7 +437,7 @@ export default class Command extends Resource {
 
   /**
    * Invoked after the command is inhibited due to it being run in a non-nsfw channel
-   * @param message The created message
+   * @param message The Nebula message wrapper
    */
   protected async didInhibitNSFW(message: CommandMessage) {
     message.send('This command should only be sent in a NSFW channel');
@@ -445,7 +445,7 @@ export default class Command extends Resource {
 
   /**
    * Invoked after the command is inhibited due to excess usage per user
-   * @param message The created message
+   * @param message The Nebula message wrapper
    */
   protected async didInhibitUsage(message: CommandMessage) {
     const id = this.options.limit.scope === 'guild' ? message.guild.id : message.author.id;
@@ -456,7 +456,7 @@ export default class Command extends Resource {
 
   /**
    * Invoked after the command is inhibited due to not enough permissions
-   * @param message The created message
+   * @param message The Nebula message wrapper
    */
   protected async didInhibitPerm(message: CommandMessage) {
     message.send('You are not allowed to run this command!');
@@ -464,7 +464,7 @@ export default class Command extends Resource {
 
   /**
    * Invoked when the user arguments don't meet the validation schema
-   * @param message The created message
+   * @param message The Nebula message wrapper
    * @param validationErrs The validation erros.
    */
   protected async didCatchValidationErrors(

@@ -10,7 +10,7 @@ export default class LevelMonitor extends Monitor {
     this.userLevels = new Map();
   }
 
-  public async didDispatch(message: Discord.Message) {
+  protected async didDispatch(message: Discord.Message) {
     const { id } = message.author;
     const userLevel = this.userLevels.get(id);
 

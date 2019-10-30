@@ -148,8 +148,10 @@ export default class Store extends Discord.Collection<ResourceTypes, NebulaResou
     Util.entriesOf(this.options.folderNames).forEach(([type, folderName]) => {
       const typePath = path.resolve(this.options.baseDir, folderName);
 
-      if (!fs.existsSync(typePath) && this.options.createFoldersIfNotExisted)
-        fs.mkdirSync(typePath);
+      if (!fs.existsSync(typePath)) {
+        if (this.options.createFoldersIfNotExisted) fs.mkdirSync(typePath);
+        else return;
+      }
 
       fs.readdirSync(typePath).forEach(groupName => {
         const groupPath = path.resolve(typePath, groupName);

@@ -10,11 +10,11 @@ export default class ValidatorCommand extends Command {
     });
   }
 
-  public async willDispatch(message: CommandMessage) {
+  protected async willDispatch(message: CommandMessage) {
     message.send('Test suites for Validator');
   }
 
-  public async didDispatch(message: CommandMessage, { mention }: ValidationResults) {
+  protected async didDispatch(message: CommandMessage, { mention }: ValidationResults) {
     message.send(`Mention: ${mention}`);
   }
 }

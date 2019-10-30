@@ -10,11 +10,11 @@ export default class UserLimitCommand extends Command {
     });
   }
 
-  public async willDispatch(message: CommandMessage) {
+  protected async willDispatch(message: CommandMessage) {
     message.send('Test suites for user limit');
   }
 
-  public async didDispatch(message: CommandMessage) {
+  protected async didDispatch(message: CommandMessage) {
     message.send(
       `You have ${this.options.limit.bucket -
         this.usage.get(message.author.id)![0]} time(s) left before cooling down. Scope: User`,

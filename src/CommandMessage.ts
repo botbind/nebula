@@ -38,7 +38,10 @@ export default class CommandMesage {
    * @param content The content of the message
    * @param options The options for the message
    */
-  public async send(content: string, options?: SendOptions): Promise<Discord.Message>;
+  public async send(
+    content: Discord.StringResolvable,
+    options?: SendOptions,
+  ): Promise<Discord.Message>;
 
   /**
    * Send a message
@@ -46,11 +49,11 @@ export default class CommandMesage {
    */
   public async send(options: SendOptions): Promise<Discord.Message>;
 
-  public async send(content: string | SendOptions, options: SendOptions = {}) {
+  public async send(content: Discord.StringResolvable | SendOptions, options: SendOptions = {}) {
     let actualContent = content;
     let actualOptions = options;
 
-    if (!options && Util.isObject(content)) {
+    if (options == null && Util.isObject(content)) {
       actualContent = '';
       actualOptions = content as SendOptions;
     } else {
@@ -486,7 +489,7 @@ export default class CommandMesage {
     let actualContent = content;
     let actualOptions = options;
 
-    if (!options && Util.isObject(content)) {
+    if (options == null && Util.isObject(content)) {
       actualContent = '';
       actualOptions = content as Discord.MessageOptions;
     } else {

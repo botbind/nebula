@@ -11,7 +11,7 @@ class Child3 extends Command {
     });
   }
 
-  public async didDispatch(message: CommandMessage, { num }: ValidationResults) {
+  protected async didDispatch(message: CommandMessage, { num }: ValidationResults) {
     message.send(`This comes from child3. I accept arguments! ${num}`);
   }
 }
@@ -36,7 +36,7 @@ class Child2 extends Command {
     });
   }
 
-  public async didDispatch(message: CommandMessage) {
+  protected async didDispatch(message: CommandMessage) {
     message.send('This comes from child2');
   }
 }

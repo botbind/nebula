@@ -8,7 +8,7 @@ export default class ReadyEvent extends Event {
     });
   }
 
-  public async didDispatch() {
+  protected async didDispatch() {
     console.log('Tests ready!');
   }
 }
