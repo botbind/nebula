@@ -448,7 +448,6 @@ export default class Command extends Resource {
    * @param message The created message
    */
   protected async didInhibitUsage(message: CommandMessage) {
-    console.log('Inhibit');
     const id = this.options.limit.scope === 'guild' ? message.guild.id : message.author.id;
     const timeLeft = (this.options.limit.time - (Date.now() - this.usage.get(id)![1])) / 1000;
 

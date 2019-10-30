@@ -16,7 +16,6 @@ export default class GuildLimitCommand extends Command {
   }
 
   public async didDispatch(message: CommandMessage) {
-    console.log('Ran!');
     message.send(
       `You have ${this.options.limit.bucket -
         this.usage.get(message.guild.id)![0]} time(s) left before cooling down. Scope: Guild`,
