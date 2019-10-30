@@ -25,12 +25,24 @@ export default class CommandMesage {
   }
 
   /**
-   * Clean up unncessary responses
+   * Reset the internal response counter and delete unneceassry responses
    */
   public reset() {
     if (this._responseIndex < this._responses.length) this._responses.pop()!.delete();
 
     this._responseIndex = 0;
+  }
+
+  /**
+   * Delete all the responses of the message
+   */
+  public deleteResponses() {
+    this._responses
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .filter(response => !(response as any).deleted)
+      .forEach(response => response.delete());
+
+    this._responses = [];
   }
 
   /**

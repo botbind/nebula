@@ -22,14 +22,24 @@ interface BaseClientOptions {
   owners?: string[];
 
   /**
-   * Whether the commands should be dispatched when the user edits the activating message
+   * Whether the responses to commands should be edited when the user edits the activating message
    */
-  commandEditable?: boolean;
+  editCommandResponses?: boolean;
 
   /**
-   * Whether the commands should be deleted when the user deletes the activating message
+   * The amount of time in milliseconds that the command responses cache should be sweeped. Command responses sweeping are disabled if set to 0
    */
-  commandDeletable?: boolean;
+  commandResponsesSweepDuration?: number;
+
+  /**
+   * The amount of time in milliseconds that the command stays in cache since last edit. Command responses sweeping are disabled if set to 0
+   */
+  commandMessageLifetime?: number;
+
+  /**
+   * Whether the responses to commands should be deleted when the user deletes the activating message
+   */
+  deleteCommandResponses?: boolean;
 }
 
 /**
@@ -46,8 +56,10 @@ const defaultOptions: ClientOptions = {
   typing: false,
   prefix: '!',
   owners: [],
-  commandEditable: false,
-  commandDeletable: false,
+  editCommandResponses: false,
+  deleteCommandResponses: false,
+  commandMessageLifetime: 0,
+  commandResponsesSweepDuration: 0,
 };
 
 const loadedAddons: Addon[] = [];

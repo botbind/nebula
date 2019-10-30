@@ -8,6 +8,10 @@ class TestClient extends Client {
   }
 }
 
-const client = new TestClient({ typing: true, commandEditable: true });
+const client = new TestClient({
+  typing: true,
+  editCommandResponses: true,
+  deleteCommandResponses: true,
+});
 
 client.login(process.env.DISCORD_TOKEN);

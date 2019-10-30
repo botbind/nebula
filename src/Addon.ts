@@ -136,10 +136,15 @@ export default class Addon {
         this.dispatcher.callLifecycles(message);
       })
       .on('messageUpdate', (oldMessage, newMessage) => {
-        if (oldMessage.content === newMessage.content || !this.client.options.commandEditable)
+        if (oldMessage.content === newMessage.content || !this.client.options.editCommandResponses)
           return;
 
         this.dispatcher.callLifecycles(newMessage);
+      })
+      .on('messageDelete', message => {
+        if (!this.client.options.deleteCommandResponses) return;
+
+        this.dispatcher.deleteResponses(message);
       });
 
     Debugger.success(`${this.constructor.name} injected`);

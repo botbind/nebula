@@ -9,7 +9,7 @@ import CommandMessage from './CommandMessage';
 export type CommandComponents = [string, string, string[]];
 
 export default class Dispatcher extends Monitor {
-  private _messages: Discord.Collection<string, CommandMessage>;
+  private _commandMessages: Discord.Collection<string, CommandMessage>;
 
   /**
    * The dispatcher of all Nebula commands
@@ -18,7 +18,20 @@ export default class Dispatcher extends Monitor {
   constructor(addon: Addon, options: OptionalMonitorOptions = {}) {
     super(addon, options);
 
-    this._messages = new Discord.Collection();
+    this._commandMessages = new Discord.Collection();
+  }
+
+  /**
+   * Delete all responses of a message
+   * @param message The created message
+   */
+  public deleteResponses(message: Discord.Message) {
+    const commandMessage = this._commandMessages.get(message.id);
+
+    if (!commandMessage) return;
+
+    commandMessage.deleteResponses();
+    this._commandMessages.delete(message.id);
   }
 
   private async _dispatchCommandsRecursively(
@@ -78,6 +91,9 @@ export default class Dispatcher extends Monitor {
 
   /**
    * Invoked when the command name doesn't resolve to any commands
+   * @param message The Nebula message wrapper
+   * @param name The name of the command
+   * @param parent The name of the parent command
    */
   protected async didResolveCommandsUnsuccessfully(
     message: CommandMessage,
@@ -92,7 +108,7 @@ export default class Dispatcher extends Monitor {
   }
 
   /**
-   * Dispatch commands based on messages.
+   * Dispatch commands based on messages
    * @param message The created message
    */
   public async didDispatch(message: Discord.Message) {
@@ -107,12 +123,12 @@ export default class Dispatcher extends Monitor {
       command => command.name === commandName || command.alias.includes(commandName),
     );
 
-    let commandMessage = this._messages.get(message.id);
+    let commandMessage = this._commandMessages.get(message.id);
 
     if (commandMessage == null) {
       commandMessage = new CommandMessage(message);
 
-      this._messages.set(message.id, commandMessage);
+      this._commandMessages.set(message.id, commandMessage);
     }
 
     if (commands.length === 0) {
