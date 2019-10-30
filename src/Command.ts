@@ -180,9 +180,9 @@ export default class Command extends Resource {
   protected usage: Discord.Collection<string, [number, number]>;
 
   /**
-   * The instantiated subcommands of the command
+   * The subcommands of the command
    */
-  public instantiatedSubcommands: Command[];
+  public subcommands: Command[];
 
   private _sweepInterval: NodeJS.Timeout | null;
 
@@ -241,11 +241,15 @@ export default class Command extends Resource {
     this.usage = new Discord.Collection();
     this._sweepInterval = null;
 
-    this.instantiatedSubcommands = this.options.subcommands.commands.map(Subcommand => {
+    // Recursively instantiate subcommands
+    this.subcommands = this.options.subcommands.commands.map(Subcommand => {
       if (!(Subcommand.prototype instanceof Command))
         throw new NebulaError('subcommands must inherit the Command structure');
 
       const subcommand = new Subcommand(this.addon);
+
+      if (subcommand.options.subcommands.defaultToFirst && subcommand.subcommands[0])
+        throw new NebulaError('Default subcommands must not have schema');
 
       if (!subcommand.options.isSubcommand)
         throw new NebulaError('subcommands must have isSubcommand set to true');

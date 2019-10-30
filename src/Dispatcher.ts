@@ -3,8 +3,6 @@ import Command from './Command';
 import Addon from './Addon';
 import Monitor, { OptionalMonitorOptions } from './Monitor';
 import CommandMessage from './CommandMessage';
-import NebulaError from './NebulaError';
-
 /**
  * The components of a commands, including 3 parts: prefix, name and arguments
  */
@@ -28,17 +26,12 @@ export default class Dispatcher extends Monitor {
     message: CommandMessage,
     args: string[],
   ) {
-    if (command.instantiatedSubcommands.length) {
+    if (command.subcommands.length) {
       const [subcommandName, ...rest] = args;
 
       if (subcommandName == null) {
         if (command.options.subcommands.defaultToFirst) {
-          const defaultSubcommand = command.instantiatedSubcommands[0];
-
-          if (defaultSubcommand.options.schema)
-            throw new NebulaError('Default subcommands must not have schema');
-
-          this._dispatchCommandsRecursively(defaultSubcommand, message, rest);
+          this._dispatchCommandsRecursively(command.subcommands[0], message, rest);
           return;
         }
 
@@ -48,10 +41,9 @@ export default class Dispatcher extends Monitor {
         return;
       }
 
-      const subcommands = command.instantiatedSubcommands.filter(
-        instantiatedSubcommand =>
-          instantiatedSubcommand.name === subcommandName ||
-          instantiatedSubcommand.alias.includes(subcommandName),
+      const subcommands = command.subcommands.filter(
+        subcommand =>
+          subcommand.name === subcommandName || subcommand.alias.includes(subcommandName),
       );
 
       if (subcommands.length === 0) {
