@@ -1,4 +1,5 @@
 import Discord from 'discord.js';
+import Client from './Client';
 import Util from './Util';
 
 type SendOptions = Discord.MessageOptions | Discord.Attachment | Discord.RichEmbed;
@@ -28,6 +29,8 @@ export default class CommandMesage {
    * Reset the internal response counter and delete unneceassry responses
    */
   public reset() {
+    if (!this.client.options.editCommandResponses) return;
+
     if (this._responseIndex < this._responses.length) this._responses.pop()!.delete();
 
     this._responseIndex = 0;
@@ -37,6 +40,8 @@ export default class CommandMesage {
    * Delete all the responses of the message
    */
   public deleteResponses() {
+    if (!this.client.options.editCommandResponses) return;
+
     this._responses
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       .filter(response => !(response as any).deleted)
@@ -72,23 +77,23 @@ export default class CommandMesage {
       actualOptions = {};
     }
 
-    const currentResponse = this._responses[this._responseIndex];
+    // Only do all the hassle when editCommandResponses or deleteCommandResponses = true
+    if (this.client.options.editCommandResponses) {
+      const currentResponse = this._responses[this._responseIndex];
 
-    this._responseIndex += 1;
+      this._responseIndex += 1;
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    if (currentResponse != null && !(currentResponse as any).deleted) {
-      return currentResponse.edit(actualContent, actualOptions as
-        | Discord.RichEmbed
-        | Discord.MessageEditOptions);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      if (currentResponse != null && !(currentResponse as any).deleted) {
+        return currentResponse.edit(actualContent, actualOptions as
+          | Discord.RichEmbed
+          | Discord.MessageEditOptions);
+      }
     }
 
-    const message = (await this.message.channel.send(
-      actualContent,
-      actualOptions,
-    )) as Discord.Message;
+    const message = (await this.channel.send(actualContent, actualOptions)) as Discord.Message;
 
-    this._responses.push(message);
+    if (this.client.options.editCommandResponses) this._responses.push(message);
 
     return message;
   }
@@ -142,7 +147,7 @@ export default class CommandMesage {
    * The client that instantiated the Message
    */
   get client() {
-    return this.message.client;
+    return this.message.client as Client;
   }
 
   /**

@@ -48,16 +48,7 @@ export default class BaseValidator<T extends Primitives> {
    * @param values The list of values
    */
   public in(...values: T[]) {
-    if (values.length === 0)
-      throw new NebulaError(`values for ${this.type}.in must have at least 1 value`);
-
-    this.addRule(({ value, rawValue, key }) => {
-      if (values.includes(value)) return true;
-
-      this.addError(rawValue, key, `${this.type}.in`);
-
-      return false;
-    });
+    this._checkPresence(values);
 
     return this;
   }
@@ -67,26 +58,24 @@ export default class BaseValidator<T extends Primitives> {
    * @param values The list of values
    */
   public notIn(...values: T[]) {
-    if (values.length === 0)
-      throw new NebulaError(`values for ${this.type}.notIn must have at least 1 value`);
-
-    this.addRule(({ value, rawValue, key }) => {
-      if (!values.includes(value)) return true;
-
-      this.addError(rawValue, key, `${this.type}.notIn`);
-
-      return false;
-    });
+    this._checkPresence(values, false);
 
     return this;
   }
 
-  /**
-   * Add a validation rule
-   * @param rule The validation rule
-   */
-  public addRule(rule: ValidationRule<T>) {
-    this.rules.push(rule);
+  private _checkPresence(values: T[], shouldPresence = true) {
+    const type = shouldPresence ? 'in' : 'notIn';
+
+    if (values.length === 0)
+      throw new NebulaError(`values for ${this.type}.${type} must have at least 1 value`);
+
+    this.rules.push(({ value, rawValue, key }) => {
+      if (values.includes(value) === shouldPresence) return true;
+
+      this.addError(rawValue, key, `${this.type}.${type}`);
+
+      return false;
+    });
   }
 
   /**
@@ -95,7 +84,7 @@ export default class BaseValidator<T extends Primitives> {
    * @param key The key of the value in the value store
    * @param type The type of the rule
    */
-  public addError(value: string, key: string, type: string) {
+  protected addError(value: string, key: string, type: string) {
     this.errs.push(new ValidationError(value, key, type));
   }
 

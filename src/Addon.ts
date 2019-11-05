@@ -1,13 +1,13 @@
 import Discord from 'discord.js';
 import Client from './Client';
-import NebulaStore from './Store';
-import NebulaDispatcher from './Dispatcher';
+import Store from './Store';
+import Dispatcher from './Dispatcher';
+import Permissions from './Permissions';
+import Validator from './Validator';
 import Debugger from './Debugger';
 import Util from './Util';
-import NebulaPermissions from './Permissions';
 import Event from './Event';
 import NebulaError from './NebulaError';
-import NebulaValidator from './Validator';
 import { Constructor } from './types';
 
 /**
@@ -20,25 +20,24 @@ export interface AddonOptions {
   name: string;
 
   /**
-   * The customised instance of Validator
+   * The customised implementation of Validator
    */
-
-  validator?: Constructor<NebulaValidator>;
-
-  /**
-   * The customised instance of Store
-   */
-  store?: Constructor<NebulaStore>;
+  validator?: Constructor<Validator>;
 
   /**
-   * The customised instance of dispatcher
+   * The customised implementation of Store
    */
-  dispatcher?: Constructor<NebulaDispatcher>;
+  store?: Constructor<Store>;
 
   /**
-   * The customised instance of Permissions
+   * The customised implementation of dispatcher
    */
-  permissions?: Constructor<NebulaPermissions>;
+  dispatcher?: Constructor<Dispatcher>;
+
+  /**
+   * The customised implementation of Permissions
+   */
+  permissions?: Constructor<Permissions>;
 }
 
 export default class Addon {
@@ -50,22 +49,22 @@ export default class Addon {
   /**
    * The store of the addon
    */
-  public store: NebulaStore;
+  public store: Store;
 
   /**
    * The validator of the addon
    */
-  public validator: NebulaValidator;
+  public validator: Validator;
 
   /**
    * The permissions of the addon
    */
-  public permissions: NebulaPermissions;
+  public permissions: Permissions;
 
   /**
    * The dispatcher of the addon
    */
-  public dispatcher: NebulaDispatcher;
+  public dispatcher: Dispatcher;
 
   /**
    * The name of the addon
@@ -87,19 +86,21 @@ export default class Addon {
 
     const {
       name,
-      store: Store,
-      dispatcher: Dispatcher,
-      validator: Validator,
-      permissions: Permission,
+      store: CustomisedStore,
+      dispatcher: CustomisedDispatcher,
+      validator: CustomisedValidator,
+      permissions: CustomisedPermission,
     } = options;
 
     this.client = client;
     this.name = name;
     this.options = options;
-    this.store = Store ? new Store(this) : new NebulaStore(this);
-    this.validator = Validator ? new Validator() : new NebulaValidator();
-    this.permissions = Permission ? new Permission(this) : new NebulaPermissions(this);
-    this.dispatcher = Dispatcher ? new Dispatcher(this) : new NebulaDispatcher(this);
+    this.store = CustomisedStore ? new CustomisedStore(this) : new Store(this);
+    this.validator = CustomisedValidator ? new CustomisedValidator(this) : new Validator();
+    this.permissions = CustomisedPermission
+      ? new CustomisedPermission(this)
+      : new Permissions(this);
+    this.dispatcher = CustomisedDispatcher ? new CustomisedDispatcher(this) : new Dispatcher(this);
 
     // Has to be done after the addon has done loading other classes
     this.store.load();
@@ -119,33 +120,33 @@ export default class Addon {
     // Trying having as few event listeners as possible
     onEvents.forEach((events, eventName) => {
       this.client.on(eventName, (...args: unknown[]) => {
-        events.forEach(event => event.callLifecycles(...args));
+        events.forEach(event => event.triggerLifecycles(...args));
       });
     });
 
     onceEvents.forEach((events, eventName) => {
       this.client.once(eventName, (...args: unknown[]) => {
-        events.forEach(event => event.callLifecycles(...args));
+        events.forEach(event => event.triggerLifecycles(...args));
       });
     });
 
-    this.client
-      .on('message', async message => {
-        this.store.monitors.forEach(monitor => monitor.callLifecycles(message));
+    this.client.on('message', async message => {
+      this.store.monitors.forEach(monitor => monitor.triggerLifecycles(message));
 
-        this.dispatcher.callLifecycles(message);
-      })
-      .on('messageUpdate', (oldMessage, newMessage) => {
-        if (oldMessage.content === newMessage.content || !this.client.options.editCommandResponses)
-          return;
+      this.dispatcher.triggerLifecycles(message);
+    });
 
-        this.dispatcher.callLifecycles(newMessage);
-      })
-      .on('messageDelete', message => {
-        if (!this.client.options.deleteCommandResponses) return;
+    if (this.client.options.editCommandResponses) {
+      this.client
+        .on('messageUpdate', (oldMessage, newMessage) => {
+          if (oldMessage.content === newMessage.content) return;
 
-        this.dispatcher.deleteResponses(message);
-      });
+          this.dispatcher.triggerLifecycles(newMessage);
+        })
+        .on('messageDelete', message => {
+          this.dispatcher.deleteResponses(message);
+        });
+    }
 
     Debugger.success(`${this.constructor.name} injected`);
   }

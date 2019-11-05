@@ -1,8 +1,8 @@
 import { Command, Addon, CommandMessage } from '../..';
 
 export default class GuildLimitCommand extends Command {
-  constructor(addon: Addon) {
-    super(addon, {
+  constructor(addon: Addon, name: string, group: string) {
+    super(addon, name, group, {
       name: 'g',
       limit: {
         time: 5000,
@@ -11,11 +11,11 @@ export default class GuildLimitCommand extends Command {
     });
   }
 
-  protected async willDispatch(message: CommandMessage) {
+  protected async willRun(message: CommandMessage) {
     message.send('Test suites for guild limit');
   }
 
-  protected async didDispatch(message: CommandMessage) {
+  protected async run(message: CommandMessage) {
     message.send(
       `You have ${this.options.limit.bucket -
         this.usage.get(message.guild.id)![0]} time(s) left before cooling down. Scope: Guild`,

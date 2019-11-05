@@ -4,13 +4,13 @@ import { Monitor, Addon } from '../..';
 export default class LevelMonitor extends Monitor {
   private userLevels: Map<string, [number, number]>;
 
-  constructor(addon: Addon) {
-    super(addon);
+  constructor(addon: Addon, name: string, group: string) {
+    super(addon, name, group);
 
     this.userLevels = new Map();
   }
 
-  protected async didDispatch(message: Discord.Message) {
+  protected async run(message: Discord.Message) {
     const { id } = message.author;
     const userLevel = this.userLevels.get(id);
 

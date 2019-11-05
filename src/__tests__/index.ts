@@ -3,7 +3,7 @@ import TestAddon from './addon';
 import { Client } from '..';
 
 class TestClient extends Client {
-  protected async didReady() {
+  protected async ready() {
     this.inject(new TestAddon(this));
   }
 }
@@ -11,7 +11,6 @@ class TestClient extends Client {
 const client = new TestClient({
   typing: true,
   editCommandResponses: true,
-  deleteCommandResponses: true,
 });
 
 client.login(process.env.DISCORD_TOKEN);

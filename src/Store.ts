@@ -8,7 +8,7 @@ import Task from './Task';
 import Monitor from './Monitor';
 import Event from './Event';
 import Language from './Language';
-import NebulaResource from './Resource';
+import Resource from './Resource';
 import Util from './Util';
 import NebulaError from './NebulaError';
 import { Constructor } from './types';
@@ -76,7 +76,7 @@ const defaultOptions: StoreOptions = {
   ignoreGroupFolderName: 'ignore',
 };
 
-export default class Store extends Discord.Collection<ResourceTypes, NebulaResource[]> {
+export default class Store extends Discord.Collection<ResourceTypes, Resource[]> {
   /**
    * The addon of the store
    */
@@ -173,17 +173,20 @@ export default class Store extends Discord.Collection<ResourceTypes, NebulaResou
     });
   }
 
-  private _import(dir: string, type: ResourceTypes, group: string) {
+  private _import(dir: string, type: ResourceTypes, groupName: string) {
+    // Support loading js and ts files
     if (fs.lstatSync(dir).isFile() && (dir.endsWith('.js') || dir.endsWith('.ts'))) {
       // eslint-disable-next-line import/no-dynamic-require, global-require, @typescript-eslint/no-var-requires
       const resourceReq = require(dir);
 
-      const Resource: Constructor<NebulaResource> = resourceReq.default || resourceReq;
+      const LoadedResource: Constructor<Resource> = resourceReq.default || resourceReq;
 
-      if (Resource.prototype instanceof structureMapping[type]) {
-        const resource = new Resource(this.addon);
-
-        resource.group = group;
+      if (LoadedResource.prototype instanceof structureMapping[type]) {
+        const resource = new LoadedResource(
+          this.addon,
+          path.basename(dir, path.extname(dir)),
+          groupName,
+        );
 
         // Do not load subcommands
         if (type === 'commands' && (resource as Command).options.isSubcommand) return;

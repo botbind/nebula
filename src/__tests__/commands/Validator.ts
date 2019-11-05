@@ -1,8 +1,8 @@
 import { Command, Addon, Validator, ValidationResults, CommandMessage } from '../..';
 
 export default class ValidatorCommand extends Command {
-  constructor(addon: Addon) {
-    super(addon, {
+  constructor(addon: Addon, name: string, group: string) {
+    super(addon, name, group, {
       name: 'v',
       schema: {
         mention: Validator.string().user(),
@@ -10,11 +10,11 @@ export default class ValidatorCommand extends Command {
     });
   }
 
-  protected async willDispatch(message: CommandMessage) {
+  protected async willRun(message: CommandMessage) {
     message.send('Test suites for Validator');
   }
 
-  protected async didDispatch(message: CommandMessage, { mention }: ValidationResults) {
+  protected async run(message: CommandMessage, { mention }: ValidationResults) {
     message.send(`Mention: ${mention}`);
   }
 }

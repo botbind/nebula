@@ -1,8 +1,8 @@
 import Discord from 'discord.js';
 import merge from 'lodash.merge';
-import Util from './Util';
 import Addon from './Addon';
 import Debugger from './Debugger';
+import Util from './Util';
 import NebulaError from './NebulaError';
 
 interface BaseClientOptions {
@@ -22,24 +22,14 @@ interface BaseClientOptions {
   owners?: string[];
 
   /**
-   * Whether the responses to commands should be edited when the user edits the activating message
+   * Whether the responses to commands should be edited/deleted when the user edits/deletes the activating message
    */
   editCommandResponses?: boolean;
 
   /**
-   * The amount of time in milliseconds that the command responses cache should be sweeped. Command responses sweeping are disabled if set to 0
-   */
-  commandResponsesSweepDuration?: number;
-
-  /**
-   * The amount of time in milliseconds that the command stays in cache since last edit. Command responses sweeping are disabled if set to 0
+   * The amount of time in milliseconds that the command stays in cache since last edit. Command responses sweeping are disabled if set to 0. This is not recommended as the cache persists
    */
   commandMessageLifetime?: number;
-
-  /**
-   * Whether the responses to commands should be deleted when the user deletes the activating message
-   */
-  deleteCommandResponses?: boolean;
 }
 
 /**
@@ -52,17 +42,15 @@ export type OptionalClientOptions = BaseClientOptions & Discord.ClientOptions;
  */
 export type ClientOptions = Required<BaseClientOptions> & Discord.ClientOptions;
 
+const addons: Addon[] = [];
+
 const defaultOptions: ClientOptions = {
   typing: false,
   prefix: '!',
   owners: [],
   editCommandResponses: false,
-  deleteCommandResponses: false,
   commandMessageLifetime: 0,
-  commandResponsesSweepDuration: 0,
 };
-
-const loadedAddons: Addon[] = [];
 
 export default class Client extends Discord.Client {
   /**
@@ -73,7 +61,12 @@ export default class Client extends Discord.Client {
   /**
    * The application of the client
    */
-  public app?: Discord.OAuth2Application | null;
+  public app: Discord.OAuth2Application | null;
+
+  /**
+   * Whether the client has become ready to start working
+   */
+  public isReady: boolean;
 
   /**
    * The main hub for loading addons
@@ -83,23 +76,31 @@ export default class Client extends Discord.Client {
     if (!Util.isObject(options))
       throw new NebulaError('The options for the client must be an object');
 
+    if (options.editCommandResponses && options.commandMessageLifetime === 0) {
+      // The default lifetime is 30 minutes
+      // eslint-disable-next-line no-param-reassign
+      options.commandMessageLifetime = 1800000;
+    }
+
     const mergedOptions = merge({}, defaultOptions, options);
 
     super(mergedOptions);
 
     this.options = mergedOptions;
+    this.isReady = false;
+    this.app = null;
 
     this.once('ready', async () => {
-      const app = await this.fetchApplication();
+      this.isReady = true;
+      this.app = await this.fetchApplication();
 
-      this.app = app;
+      if (!this.options.owners.includes(this.app.owner.id))
+        this.options.owners.push(this.app.owner.id);
 
-      if (!this.options.owners.includes(app.owner.id)) this.options.owners.push(app.owner.id);
-
-      if (this.didReady) {
+      if (this.ready) {
         Debugger.info(`${this.constructor.name} ready`, 'Lifecycle');
 
-        this.didReady();
+        this.ready();
       }
 
       this.emit('ready');
@@ -110,9 +111,11 @@ export default class Client extends Discord.Client {
    * The invite link for the bot
    */
   get invite() {
+    if (!this.isReady) return null;
+
     const permissions = new Discord.Permissions(3072);
 
-    loadedAddons.forEach(addon => {
+    addons.forEach(addon => {
       addon.store.commands.forEach(command => {
         permissions.add(...command.options.requiredPermissions);
       });
@@ -125,16 +128,16 @@ export default class Client extends Discord.Client {
 
   /**
    * Inject addons
-   * @param addons The addons to load
+   * @param addon The addon to inject
    */
-  protected inject(...addons: Addon[]) {
-    if (addons.length === 0) throw new NebulaError('At least 1 addon must be specified');
+  protected inject(addon: Addon) {
+    if (!(addon instanceof Addon)) throw new NebulaError('Addon is invalid');
 
-    loadedAddons.push(...addons);
+    addons.push(addon);
   }
 
   /**
    * Invoked when the client becomes ready to start working
    */
-  protected async didReady?(): Promise<void>;
+  protected async ready?(): Promise<void>;
 }

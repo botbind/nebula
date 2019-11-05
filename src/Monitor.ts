@@ -48,36 +48,36 @@ export default abstract class Monitor extends Resource {
    * @param addon The addon of the monitor
    * @param options The options for the monitor
    */
-  constructor(addon: Addon, options: OptionalMonitorOptions = {}) {
+  constructor(addon: Addon, name: string, group: string, options: OptionalMonitorOptions = {}) {
     if (!Util.isObject(options))
       throw new NebulaError('The options for the monitor must be an object!');
 
-    super(addon);
+    super(addon, name, group);
 
     this.options = merge({}, defaultOptions, options);
   }
 
   /**
-   * Call all the lifecycle methods
+   * Trigger all the lifecycle methods
    * @param message The created message
    */
-  public async callLifecycles(message: Discord.Message) {
+  public async triggerLifecycles(message: Discord.Message) {
     const constructorName = this.constructor.name;
 
-    Debugger.info(`${constructorName} shouldDispatch`, 'Lifecycle');
+    Debugger.info(`${constructorName} shouldRun`, 'Lifecycle');
 
-    const shouldDispatch = await this.shouldDispatch(message);
+    const shouldDispatch = await this.shouldRun(message);
 
-    Debugger.info(`${constructorName} didDispatch`, 'Lifecycle');
+    Debugger.info(`${constructorName} run`, 'Lifecycle');
 
-    if (shouldDispatch) this.didDispatch(message);
+    if (shouldDispatch) this.run(message);
   }
 
   /**
-   * Whether the monitor should be dispatched
+   * Whether the monitor should run
    * @param message The created message
    */
-  protected async shouldDispatch(message: Discord.Message) {
+  protected async shouldRun(message: Discord.Message) {
     return (
       (!this.options.ignoreBots || !message.author.bot) &&
       (!this.options.ignoreSelf || message.author !== this.addon.client.user) &&
@@ -86,8 +86,8 @@ export default abstract class Monitor extends Resource {
   }
 
   /**
-   * Invoked when the monitor is dispatched
+   * Invoked when the monitor runs
    * @param message The created message
    */
-  protected abstract async didDispatch(message: Discord.Message): Promise<void>;
+  protected abstract async run(message: Discord.Message): Promise<void>;
 }

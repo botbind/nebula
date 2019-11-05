@@ -123,8 +123,8 @@ export default class NumberValidator extends BaseValidator<number> {
         'The direction of compare for number.compare must be greater, smaller, greater or equal, smaler or equal or equal',
       );
 
-    this.rules.push(({ value, rawValue, key, ref }) => {
-      const entry = ref(refKey);
+    this.rules.push(({ value, rawValue, key, valueStore }) => {
+      const entry = valueStore[refKey];
       if (entry == null)
         throw new NebulaError(`The reference key for number.compare "${refKey}" not found`);
 

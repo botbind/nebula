@@ -6,32 +6,23 @@ export default class Resource {
    */
   protected addon: Addon;
 
-  private _group?: string;
+  /**
+   * The name of the resource
+   */
+  public name: string;
 
   /**
    * The group of the resource
    */
-  get group() {
-    return this._group!;
-  }
-
-  set group(group: string) {
-    this._group = group;
-  }
+  public group: string;
 
   /**
    * The base structure for all Nebula resources
    * @param addon The addon of the resource
    */
-  constructor(addon: Addon) {
+  constructor(addon: Addon, name = '', group = '') {
     this.addon = addon;
-
-    // Allows async function to be executed when the resource is ready
-    if (this.didReady) this.didReady();
+    this.name = name;
+    this.group = group;
   }
-
-  /**
-   * Invoked when the resource becomes ready to start working
-   */
-  protected async didReady?(): Promise<void>;
 }

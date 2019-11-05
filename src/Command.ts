@@ -55,7 +55,7 @@ export interface SubcommandsOptions {
  */
 export interface PermissionOptions {
   /**
-   * Whether the command should only be dispatched with an exact permission level
+   * Whether the command should only run with an exact permission level
    */
   exact?: boolean;
 
@@ -72,7 +72,7 @@ export interface OptionalCommandOptions {
   /**
    * The name of the command
    */
-  name: string;
+  name?: string;
 
   /**
    * The alias of the command
@@ -123,7 +123,7 @@ export interface OptionalCommandOptions {
 /**
  * The options for the command
  */
-export interface CommandOptions extends RequiredExcept<OptionalCommandOptions, 'schema'> {
+export interface CommandOptions extends RequiredExcept<OptionalCommandOptions, 'schema' | 'name'> {
   limit: Required<LimitOptions>;
   subcommands: Required<SubcommandsOptions>;
   permission: Required<PermissionOptions>;
@@ -132,7 +132,6 @@ export interface CommandOptions extends RequiredExcept<OptionalCommandOptions, '
 const limitScopes = ['user', 'guild'];
 
 const defaultOptions: CommandOptions = {
-  name: '',
   alias: [],
   description: '',
   nsfw: false,
@@ -154,11 +153,6 @@ const defaultOptions: CommandOptions = {
 };
 
 export default class Command extends Resource {
-  /**
-   * The name of the command
-   */
-  public name: string;
-
   /**
    * The alias of the command
    */
@@ -191,11 +185,9 @@ export default class Command extends Resource {
    * @param client The client of the command
    * @param options The options of the command
    */
-  constructor(addon: Addon, options: OptionalCommandOptions) {
+  constructor(addon: Addon, name: string, group: string, options: OptionalCommandOptions = {}) {
     if (!Util.isObject(options))
       throw new NebulaError('The options for the command must be an object');
-
-    if (options.name == null) throw new NebulaError('The name of the command must be specified');
 
     if (options.limit != null) {
       if (options.limit.scope != null && !limitScopes.includes(options.limit.scope))
@@ -228,13 +220,12 @@ export default class Command extends Resource {
         throw new NebulaError(`The validation schema must be an object with validators`);
     }
 
-    super(addon);
+    super(addon, options.name == null ? name : options.name, group);
 
     const mergedOptions = merge({}, defaultOptions, options);
 
-    const { name, alias, description } = mergedOptions;
+    const { alias, description } = mergedOptions;
 
-    this.name = name;
     this.alias = alias;
     this.description = description;
     this.options = mergedOptions;
@@ -283,17 +274,16 @@ export default class Command extends Resource {
     } else {
       this.usage.set(id, [1, currTime]);
 
-      if (this._sweepInterval == null)
-        this._sweepInterval = setInterval(this._sweep.bind(this), 30000);
+      if (!this._sweepInterval) {
+        this._sweepInterval = setInterval(this._sweep.bind(this), this.options.limit.time);
+      }
     }
 
     return true;
   }
 
   private _sweep() {
-    const currTime = Date.now();
-
-    this.usage.sweep(([, time]) => currTime - time > this.options.limit.time);
+    this.usage.sweep(([, time]) => Date.now() - time > this.options.limit.time);
 
     if (this.usage.size === 0) {
       clearInterval(this._sweepInterval!);
@@ -323,37 +313,37 @@ export default class Command extends Resource {
   }
 
   /**
-   * Call all the lifecycle methods
+   * Trigger all the lifecycle methods
    * @param message The Nebula message wrapper
    * @param args The parsed user arguments
    */
-  public async callLifecycles(message: CommandMessage, args: string[]) {
+  public async triggerLifecycles(message: CommandMessage, args: string[]) {
     const constructorName = this.constructor.name;
 
     // We have to use await on lifecycle methods for safety reasons
     // This allows right execution order and command editing to work
-    if (this.willDispatch != null) {
-      Debugger.info(`${constructorName} willDispatch`, 'Lifecycle');
+    if (this.willRun != null) {
+      Debugger.info(`${constructorName} willRun`, 'Lifecycle');
 
-      await this.willDispatch(message);
+      await this.willRun(message);
     }
 
-    let shouldDispatch = true;
+    let shouldRun = true;
 
-    if (this.shouldDispatch) {
-      Debugger.info(`${constructorName} shouldDispatch`, 'Lifecycle');
+    if (this.shouldRun) {
+      Debugger.info(`${constructorName} shouldRun`, 'Lifecycle');
 
-      shouldDispatch = await this.shouldDispatch(message);
+      shouldRun = await this.shouldRun(message);
     }
 
-    if (!shouldDispatch) return;
+    if (!shouldRun) return;
 
     const allowUsage = await this.allowUsage(message);
 
     if (!allowUsage) {
-      Debugger.info(`${constructorName} didInhibitUsage`, 'Lifecycle');
+      Debugger.info(`${constructorName} inhibitUsage`, 'Lifecycle');
 
-      await this.didInhibitUsage(message);
+      await this.inhibitUsage(message);
 
       return;
     }
@@ -361,9 +351,9 @@ export default class Command extends Resource {
     const allowNSFW = await this.allowNSFW(message);
 
     if (!allowNSFW) {
-      Debugger.info(`${constructorName} didInhibitNSFW`, 'Lifecycle');
+      Debugger.info(`${constructorName} inhibitNSFW`, 'Lifecycle');
 
-      await this.didInhibitNSFW(message);
+      await this.inhibitNSFW(message);
 
       return;
     }
@@ -371,9 +361,9 @@ export default class Command extends Resource {
     const allowPerm = await this.allowPerm(message);
 
     if (!allowPerm) {
-      Debugger.info(`${constructorName} didInhibitPerm`, 'Lifecycle');
+      Debugger.info(`${constructorName} inhibitPerm`, 'Lifecycle');
 
-      await this.didInhibitPerm(message);
+      await this.inhibitPerm(message);
 
       return;
     }
@@ -388,9 +378,9 @@ export default class Command extends Resource {
       ][];
 
       if (errors.length) {
-        Debugger.info(`${constructorName} didCatchValidationErrors`, 'Lifecycle');
+        Debugger.info(`${constructorName} catchValidationErrors`, 'Lifecycle');
 
-        await this.didCatchValidationErrors(
+        await this.catchValidationErrors(
           message,
           errors.reduce(
             (res, [key, result]) => {
@@ -408,34 +398,30 @@ export default class Command extends Resource {
       validatedArgs = results as ValidationResults;
     }
 
-    if (this.didDispatch == null) return;
+    if (this.run == null) return;
 
-    let isSuccessfullyDispatched = true;
+    let isSuccessfullyRun = true;
 
     // Here we use try...catch statement to improve DX: This allows the devs to throw an error and
     // it would have the same effect as returning it for returning false
     try {
-      Debugger.info(`${constructorName} didDispatch`, 'Lifecycle');
+      Debugger.info(`${constructorName} run`, 'Lifecycle');
 
-      const dispatchResult = await this.didDispatch(message, validatedArgs);
+      const runResult = await this.run(message, validatedArgs);
 
-      if (dispatchResult instanceof Error || (dispatchResult !== undefined && !dispatchResult))
-        isSuccessfullyDispatched = false;
+      if (runResult instanceof Error || (runResult !== undefined && !runResult))
+        isSuccessfullyRun = false;
     } catch (err) {
       Debugger.error(err);
-      isSuccessfullyDispatched = false;
+      isSuccessfullyRun = false;
     }
 
-    if (!isSuccessfullyDispatched) {
-      if (this.didDispatchUnsuccessfully) {
-        Debugger.info(`${constructorName} didDispatchUnsuccessfully`, 'Lifecycle');
+    if (isSuccessfullyRun) {
+      if (this.finalize) {
+        Debugger.info(`${constructorName} didRunSuccessfully`, 'Lifecycle');
 
-        await this.didDispatchUnsuccessfully(message, validatedArgs);
+        await this.finalize(message, validatedArgs);
       }
-    } else if (this.didDispatchSuccessfully) {
-      Debugger.info(`${constructorName} didDispatchSuccessfully`, 'Lifecycle');
-
-      await this.didDispatchSuccessfully(message, validatedArgs);
     }
   }
 
@@ -443,7 +429,7 @@ export default class Command extends Resource {
    * Invoked after the command is inhibited due to it being run in a non-nsfw channel
    * @param message The Nebula message wrapper
    */
-  protected async didInhibitNSFW(message: CommandMessage) {
+  protected async inhibitNSFW(message: CommandMessage) {
     message.send('This command should only be sent in a NSFW channel');
   }
 
@@ -451,7 +437,7 @@ export default class Command extends Resource {
    * Invoked after the command is inhibited due to excess usage per user
    * @param message The Nebula message wrapper
    */
-  protected async didInhibitUsage(message: CommandMessage) {
+  protected async inhibitUsage(message: CommandMessage) {
     const id = this.options.limit.scope === 'guild' ? message.guild.id : message.author.id;
     const timeLeft = (this.options.limit.time - (Date.now() - this.usage.get(id)![1])) / 1000;
 
@@ -462,7 +448,7 @@ export default class Command extends Resource {
    * Invoked after the command is inhibited due to not enough permissions
    * @param message The Nebula message wrapper
    */
-  protected async didInhibitPerm(message: CommandMessage) {
+  protected async inhibitPerm(message: CommandMessage) {
     message.send('You are not allowed to run this command!');
   }
 
@@ -471,10 +457,7 @@ export default class Command extends Resource {
    * @param message The Nebula message wrapper
    * @param validationErrs The validation erros.
    */
-  protected async didCatchValidationErrors(
-    message: CommandMessage,
-    validationErrs: ValidationErrors,
-  ) {
+  protected async catchValidationErrors(message: CommandMessage, validationErrs: ValidationErrors) {
     Object.values(validationErrs).forEach(errs => {
       errs.forEach(err => {
         message.send(err.message);
@@ -483,39 +466,31 @@ export default class Command extends Resource {
   }
 
   /**
-   * Invoked when the command before the command is processed
+   * Invoked when the command before the command runs
+   * @param message The Nebula message wrapper
    */
-  protected async willDispatch?(message: CommandMessage): Promise<void>;
+  protected async willRun?(message: CommandMessage): Promise<void>;
 
   /**
-   * Whether the command should be dispatched
+   * Whether the command should run
+   * @param message The Nebula message wrapper
    */
-  protected async shouldDispatch?(message: CommandMessage): Promise<boolean>;
+  protected async shouldRun?(message: CommandMessage): Promise<boolean>;
 
   /**
-   * Invoked when the command is dispatched
+   * Invoked when the command runs
+   * @param message The Nebula message wrapper
    * @param args The user arguments
    */
-  protected async didDispatch?(
+  protected async run?(
     message: CommandMessage,
     args?: ValidationResults,
   ): Promise<void | boolean | Error>;
 
   /**
-   * Invoked when the command is successfully dispatched
+   * Invoked when the command successfully runs
+   * @param message The Nebula message wrapper
    * @param args The user arguments
    */
-  protected async didDispatchSuccessfully?(
-    message: CommandMessage,
-    args?: ValidationResults,
-  ): Promise<void>;
-
-  /**
-   * Invoked when the command fails
-   * @param args The user arguments
-   */
-  protected async didDispatchUnsuccessfully?(
-    message: CommandMessage,
-    args?: ValidationResults,
-  ): Promise<void>;
+  protected async finalize?(message: CommandMessage, args?: ValidationResults): Promise<void>;
 }

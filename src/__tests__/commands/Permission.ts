@@ -1,8 +1,8 @@
 import { Command, Addon, CommandMessage } from '../..';
 
 export default class PermissionCommand extends Command {
-  constructor(addon: Addon) {
-    super(addon, {
+  constructor(addon: Addon, name: string, group: string) {
+    super(addon, name, group, {
       name: 'p',
       permission: {
         level: 7,
@@ -10,11 +10,11 @@ export default class PermissionCommand extends Command {
     });
   }
 
-  protected async willDispatch(message: CommandMessage) {
+  protected async willRun(message: CommandMessage) {
     message.send('Test suites for permissions');
   }
 
-  protected async didDispatch(message: CommandMessage) {
+  protected async run(message: CommandMessage) {
     message.send('You are allowed to run this command');
   }
 }

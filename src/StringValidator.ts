@@ -21,7 +21,7 @@ export default class StringValidator extends BaseValidator<string> {
   public length(size: number) {
     if (!Util.isNumber(size)) throw new NebulaError('The size for string.length must be a number');
 
-    this.addRule(({ value, rawValue, key }) => {
+    this.rules.push(({ value, rawValue, key }) => {
       if (value.length === size) return true;
 
       this.addError(rawValue, key, 'string.length');
@@ -40,7 +40,7 @@ export default class StringValidator extends BaseValidator<string> {
     if (!Util.isNumber(size))
       throw new NebulaError('The minimum size for string.min must be a number');
 
-    this.addRule(({ value, rawValue, key }) => {
+    this.rules.push(({ value, rawValue, key }) => {
       if (value.length >= size) return true;
 
       this.addError(rawValue, key, 'string.min');
@@ -59,7 +59,7 @@ export default class StringValidator extends BaseValidator<string> {
     if (!Util.isNumber(size))
       throw new NebulaError('The maximum size for string.max must be a number');
 
-    this.addRule(({ value, rawValue, key }) => {
+    this.rules.push(({ value, rawValue, key }) => {
       if (value.length <= size) return true;
 
       this.addError(rawValue, key, 'string.max');
@@ -78,7 +78,7 @@ export default class StringValidator extends BaseValidator<string> {
     if (!(regex instanceof RegExp))
       throw new NebulaError('The test regex for string.test must be a RegExp');
 
-    this.addRule(({ value, rawValue, key }) => {
+    this.rules.push(({ value, rawValue, key }) => {
       if (regex.test(value)) return true;
 
       this.addError(rawValue, key, 'string.test');
@@ -93,7 +93,7 @@ export default class StringValidator extends BaseValidator<string> {
    * Check if a value is a user mention
    */
   public user() {
-    this._testDiscordStrings('user');
+    this._checkDiscordStrings('user');
 
     return this;
   }
@@ -102,7 +102,7 @@ export default class StringValidator extends BaseValidator<string> {
    * Check if a value is a channel mention
    */
   public channel() {
-    this._testDiscordStrings('channel');
+    this._checkDiscordStrings('channel');
 
     return this;
   }
@@ -111,7 +111,7 @@ export default class StringValidator extends BaseValidator<string> {
    * Check if a value is an emoji mention
    */
   public emoji() {
-    this._testDiscordStrings('emoji');
+    this._checkDiscordStrings('emoji');
 
     return this;
   }
@@ -120,7 +120,7 @@ export default class StringValidator extends BaseValidator<string> {
    * Check if a value is a role mention
    */
   public role() {
-    this._testDiscordStrings('role');
+    this._checkDiscordStrings('role');
 
     return this;
   }
@@ -129,13 +129,13 @@ export default class StringValidator extends BaseValidator<string> {
    * Check if a value is a discord snowflake
    */
   public snowflake() {
-    this._testDiscordStrings('snowflake');
+    this._checkDiscordStrings('snowflake');
 
     return this;
   }
 
-  private _testDiscordStrings(type: string) {
-    this.addRule(({ value, rawValue, key, message }) => {
+  private _checkDiscordStrings(type: string) {
+    this.rules.push(({ value, rawValue, key, message }) => {
       const enhancedType = `string.${type}`;
       let regex;
       let collection;

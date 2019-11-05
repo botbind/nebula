@@ -1,14 +1,13 @@
 import { Event, Addon } from '../..';
 
 export default class ReadyEvent extends Event {
-  constructor(addon: Addon) {
-    super(addon, {
-      name: 'ready',
+  constructor(addon: Addon, name: string, group: string) {
+    super(addon, name, group, {
       once: true,
     });
   }
 
-  protected async didDispatch() {
+  protected async run() {
     console.log('Tests ready!');
   }
 }

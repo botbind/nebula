@@ -52,9 +52,9 @@ export interface ValidationRuleArguments<T extends Primitives> {
   key: string;
 
   /**
-   * The function that returns a value store entry based on a ref key
+   * The value store
    */
-  ref: (key: string) => ValueStoreEntry | undefined;
+  valueStore: ValueStore;
 
   /**
    * The created message
@@ -191,7 +191,7 @@ export default class Validator {
           value,
           rawValue: currRawValue,
           key: currKey,
-          ref: (refKey: string) => valueStore[refKey],
+          valueStore,
           message,
         });
 
