@@ -9,8 +9,8 @@ class TestClient extends Client {
 }
 
 const client = new TestClient({
-  typing: true,
-  editCommandResponses: true,
+  shouldType: true,
+  shouldEditCommandResponses: true,
 });
 
 client.login(process.env.DISCORD_TOKEN);

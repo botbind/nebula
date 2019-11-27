@@ -21,9 +21,7 @@ class Child1 extends Command {
     super(addon, name, group, {
       name: 'child-1',
       isSubcommand: true,
-      subcommands: {
-        commands: [Child3],
-      },
+      subcommands: [Child3],
     });
   }
 }
@@ -45,9 +43,7 @@ export default class SubcommandCommand extends Command {
   constructor(addon: Addon, name: string, group: string) {
     super(addon, name, group, {
       name: 's',
-      subcommands: {
-        commands: [Child1, Child2],
-      },
+      subcommands: [Child1, Child2],
     });
   }
 }

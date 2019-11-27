@@ -6,9 +6,15 @@ class TestStore extends Store {
       baseDir: __dirname,
     });
   }
+
+  myOwnMethod() {
+    console.log('hey');
+  }
 }
 
 export default class TestAddon extends Addon {
+  store!: TestStore;
+
   constructor(client: Client) {
     super(client, {
       name: 'test-addon',

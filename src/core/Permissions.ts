@@ -23,10 +23,10 @@ export default class Permissions extends Discord.Collection<number, PermissionCh
     this.addon = addon;
 
     this.set(0, async () => true)
-      .set(6, async message => message.member.permissions.has('MANAGE_GUILD'))
-      .set(7, async message => message.member.permissions.has('ADMINISTRATOR'))
-      .set(8, async message => message.member === message.guild.owner)
-      .set(10, async message => this.addon.client.options.owners.includes(message.author.id));
+      .set(6, async message => message.guild && message.member.permissions.has('MANAGE_GUILD'))
+      .set(7, async message => message.guild && message.member.permissions.has('ADMINISTRATOR'))
+      .set(8, async message => message.guild && message.member === message.guild.owner)
+      .set(10, async message => this.addon.client.owners.includes(message.author.id));
   }
 
   /**

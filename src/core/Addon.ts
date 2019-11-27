@@ -8,6 +8,7 @@ import Debugger from './Debugger';
 import Util from './Util';
 import Event from './Event';
 import NebulaError from './NebulaError';
+import * as Constants from './constants';
 import { Constructor } from './types';
 
 /**
@@ -72,35 +73,50 @@ export default class Addon {
   public name: string;
 
   /**
-   * The options of the addon
-   */
-  public options: AddonOptions;
-
-  /**
    * The entry point of all Nebula resources
    * @param client The client of the addon
    * @param options The options of the addon
    */
   constructor(client: Client, options: AddonOptions) {
-    if (!Util.isObject(options)) throw new NebulaError('The options for Addon must be an object');
+    if (Constants.IS_DEV && !Util.isObject(options))
+      throw new NebulaError(Constants.ERROR_MESSAGES['addon.options']);
 
     const {
       name,
       store: CustomisedStore,
       dispatcher: CustomisedDispatcher,
       validator: CustomisedValidator,
-      permissions: CustomisedPermission,
+      permissions: CustomisedPermissions,
     } = options;
+
+    if (Constants.IS_DEV) {
+      if (typeof name === 'string')
+        throw new NebulaError(Constants.ERROR_MESSAGES['addon.options.name']);
+
+      if (CustomisedStore != null && !(CustomisedStore.prototype instanceof Store))
+        throw new NebulaError(Constants.ERROR_MESSAGES['addon.options.store']);
+
+      if (CustomisedDispatcher != null && !(CustomisedDispatcher.prototype instanceof Dispatcher))
+        throw new NebulaError(Constants.ERROR_MESSAGES['addon.options.dispatcher']);
+
+      if (CustomisedValidator != null && !(CustomisedValidator.prototype instanceof Validator))
+        throw new NebulaError(Constants.ERROR_MESSAGES['addon.options.validator']);
+
+      if (
+        CustomisedPermissions != null &&
+        !(CustomisedPermissions.prototype instanceof Permissions)
+      )
+        throw new NebulaError(Constants.ERROR_MESSAGES['addon.options.permissions']);
+    }
 
     this.client = client;
     this.name = name;
-    this.options = options;
-    this.store = CustomisedStore ? new CustomisedStore(this) : new Store(this);
-    this.validator = CustomisedValidator ? new CustomisedValidator(this) : new Validator();
-    this.permissions = CustomisedPermission
-      ? new CustomisedPermission(this)
-      : new Permissions(this);
-    this.dispatcher = CustomisedDispatcher ? new CustomisedDispatcher(this) : new Dispatcher(this);
+    this.store = CustomisedStore != null ? new CustomisedStore(this) : new Store(this);
+    this.dispatcher =
+      CustomisedDispatcher != null ? new CustomisedDispatcher(this) : new Dispatcher(this);
+    this.validator = CustomisedValidator != null ? new CustomisedValidator(this) : new Validator();
+    this.permissions =
+      CustomisedPermissions != null ? new CustomisedPermissions(this) : new Permissions(this);
 
     // Has to be done after the addon has done loading other classes
     this.store.load();
@@ -110,7 +126,7 @@ export default class Addon {
     const onEvents = new Discord.Collection<string, Event[]>();
 
     this.store.events.forEach(event => {
-      const eventCollection = event.options.once ? onceEvents : onEvents;
+      const eventCollection = event.once ? onceEvents : onEvents;
       const fetchedEvent = eventCollection.get(event.name);
 
       if (fetchedEvent == null) eventCollection.set(event.name, [event]);
@@ -120,28 +136,28 @@ export default class Addon {
     // Trying having as few event listeners as possible
     onEvents.forEach((events, eventName) => {
       this.client.on(eventName, (...args: unknown[]) => {
-        events.forEach(event => event.triggerLifecycles(...args));
+        events.forEach(event => event.invokeLifecycles(...args));
       });
     });
 
     onceEvents.forEach((events, eventName) => {
       this.client.once(eventName, (...args: unknown[]) => {
-        events.forEach(event => event.triggerLifecycles(...args));
+        events.forEach(event => event.invokeLifecycles(...args));
       });
     });
 
     this.client.on('message', async message => {
-      this.store.monitors.forEach(monitor => monitor.triggerLifecycles(message));
+      this.store.monitors.forEach(monitor => monitor.invokeLifecycles(message));
 
-      this.dispatcher.triggerLifecycles(message);
+      this.dispatcher.invokeLifecycles(message);
     });
 
-    if (this.client.options.editCommandResponses) {
+    if (this.client.shouldEditCommandResponses) {
       this.client
         .on('messageUpdate', (oldMessage, newMessage) => {
           if (oldMessage.content === newMessage.content) return;
 
-          this.dispatcher.triggerLifecycles(newMessage);
+          this.dispatcher.invokeLifecycles(newMessage);
         })
         .on('messageDelete', message => {
           this.dispatcher.deleteResponses(message);

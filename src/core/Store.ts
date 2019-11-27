@@ -1,7 +1,6 @@
 import fs from 'fs';
 import path from 'path';
 import Discord from 'discord.js';
-import merge from 'lodash.merge';
 import Addon from './Addon';
 import Command from './Command';
 import Task from './Task';
@@ -11,6 +10,7 @@ import Language from './Language';
 import Resource from './Resource';
 import Util from './Util';
 import NebulaError from './NebulaError';
+import * as Constants from './constants';
 import { Constructor } from './types';
 
 /**
@@ -21,12 +21,12 @@ export type ResourceTypes = 'commands' | 'tasks' | 'monitors' | 'events' | 'lang
 /**
  * The folders that will be loaded for resources
  */
-export type FolderNames = Partial<Record<ResourceTypes, string>>;
+export type FolderNames = { [key in ResourceTypes]?: string };
 
 /**
- * The optional options passed as arguments to the store
+ * The options for the store
  */
-export interface OptionalStoreOptions {
+export interface StoreOptions {
   /**
    * The base directory of the addon
    */
@@ -35,7 +35,7 @@ export interface OptionalStoreOptions {
   /**
    * Whether resource folders should be created if not exist
    */
-  createFoldersIfNotExisted?: boolean;
+  shouldCreateFolders?: boolean;
 
   /**
    * The folder whose name shouldn't be used as the group name
@@ -48,32 +48,12 @@ export interface OptionalStoreOptions {
   folderNames?: FolderNames;
 }
 
-/**
- * The options for the store
- */
-export interface StoreOptions extends Required<OptionalStoreOptions> {
-  folderNames: Required<FolderNames>;
-}
-
 const structureMapping = {
   commands: Command,
   tasks: Task,
   monitors: Monitor,
   events: Event,
   languages: Language,
-};
-
-const defaultOptions: StoreOptions = {
-  baseDir: process.cwd(),
-  folderNames: {
-    commands: 'commands',
-    tasks: 'tasks',
-    monitors: 'monitors',
-    events: 'events',
-    languages: 'languages',
-  },
-  createFoldersIfNotExisted: true,
-  ignoreGroupFolderName: 'ignore',
 };
 
 export default class Store extends Discord.Collection<ResourceTypes, Resource[]> {
@@ -83,21 +63,67 @@ export default class Store extends Discord.Collection<ResourceTypes, Resource[]>
   protected addon: Addon;
 
   /**
-   * The options for the store
+   * The base directory of the addon
    */
-  public options: StoreOptions;
+  public baseDir: string;
+
+  /**
+   * Whether resource folders should be created if not exist
+   */
+  public shouldCreateFolders: boolean;
+
+  /**
+   * The folder whose name shouldn't be used as the group name
+   */
+  public ignoreGroupFolderName: string;
+
+  /**
+   * The folder names mapping
+   */
+  public folderNames: Required<FolderNames>;
 
   /**
    * The store of all Nebula resources
    * @param addon The addon of the store
    */
-  constructor(addon: Addon, options: OptionalStoreOptions = {}) {
-    if (!Util.isObject(options)) throw new NebulaError('The options for Store must be an object');
+  constructor(addon: Addon, options: StoreOptions = {}) {
+    if (Constants.IS_DEV && !Util.isObject(options))
+      throw new NebulaError(Constants.ERROR_MESSAGES['store.options']);
+
+    const {
+      baseDir = process.cwd(),
+      folderNames = {
+        commands: 'commands',
+        tasks: 'tasks',
+        monitors: 'monitors',
+        events: 'events',
+        languages: 'languages',
+      },
+      shouldCreateFolders = true,
+      ignoreGroupFolderName = 'ignore',
+    } = options;
+
+    if (Constants.IS_DEV) {
+      if (typeof baseDir !== 'string')
+        throw new NebulaError(Constants.ERROR_MESSAGES['store.options.baseDir']);
+
+      if (!Util.isObject(folderNames))
+        throw new NebulaError(Constants.ERROR_MESSAGES['store.options.folderNames']);
+
+      if (typeof shouldCreateFolders !== 'boolean')
+        throw new NebulaError(Constants.ERROR_MESSAGES['store.options.shouldCreateFolders']);
+
+      if (typeof ignoreGroupFolderName !== 'string')
+        throw new NebulaError(Constants.ERROR_MESSAGES['store.options.ignoreGroupFolderName']);
+    }
 
     super();
 
     this.addon = addon;
-    this.options = merge({}, defaultOptions, options);
+    this.baseDir = baseDir;
+    this.folderNames = folderNames as Required<FolderNames>;
+    this.shouldCreateFolders = shouldCreateFolders;
+    this.ignoreGroupFolderName = ignoreGroupFolderName;
 
     this.set('commands', [])
       .set('tasks', [])
@@ -145,11 +171,11 @@ export default class Store extends Discord.Collection<ResourceTypes, Resource[]>
    * Load all the available and valid resources under the base directory
    */
   public load() {
-    Util.entriesOf(this.options.folderNames).forEach(([type, folderName]) => {
-      const typePath = path.resolve(this.options.baseDir, folderName);
+    Util.entriesOf(this.folderNames).forEach(([type, folderName]) => {
+      const typePath = path.resolve(this.baseDir, folderName);
 
       if (!fs.existsSync(typePath)) {
-        if (this.options.createFoldersIfNotExisted) fs.mkdirSync(typePath);
+        if (this.shouldCreateFolders) fs.mkdirSync(typePath);
         else return;
       }
 
@@ -158,7 +184,7 @@ export default class Store extends Discord.Collection<ResourceTypes, Resource[]>
 
         if (fs.lstatSync(groupPath).isDirectory()) {
           const actualGroupName =
-            groupName === this.options.ignoreGroupFolderName ? 'nebula-ignore' : groupName;
+            groupName === this.ignoreGroupFolderName ? 'nebula-ignore' : groupName;
 
           fs.readdirSync(groupPath).forEach(resourceName => {
             const resourcePath = path.resolve(groupPath, resourceName);
@@ -189,7 +215,7 @@ export default class Store extends Discord.Collection<ResourceTypes, Resource[]>
         );
 
         // Do not load subcommands
-        if (type === 'commands' && (resource as Command).options.isSubcommand) return;
+        if (type === 'commands' && (resource as Command).isSubcommand) return;
 
         this.get(type)!.push(resource);
       }

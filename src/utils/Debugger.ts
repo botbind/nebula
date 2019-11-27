@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import colors from 'colors/safe';
 import dayjs from 'dayjs';
 
@@ -19,7 +18,7 @@ export default class Debugger {
    * @param type The log type
    * @param category The category of the message
    */
-  private static _interpolateMessage(message: string, type: LogTypes, category?: string) {
+  private static _interpolateMessage(message: unknown, type: LogTypes, category?: string) {
     let styledType = `[${type}]`;
 
     switch (type) {
@@ -38,10 +37,10 @@ export default class Debugger {
       default:
     }
 
-    const styledCategory = category ? colors.italic(`[${category}]`) : '';
+    const styledCategory = category ? colors.italic(`[${category}] `) : '';
     const time = dayjs().format('DD-MM-YYYY HH:mm:ss');
 
-    return `${styledType} ${styledCategory} [${time}] ${message}`;
+    return `${styledType} ${styledCategory}[${time}] ${message}`;
   }
 
   /**
@@ -49,7 +48,7 @@ export default class Debugger {
    * @param message The message to be printed
    * @param category The category of the message
    */
-  public static info(message: any, category?: string) {
+  public static info(message: unknown, category?: string) {
     if (isDev) console.log(Debugger._interpolateMessage(message, 'info', category));
   }
 
@@ -58,7 +57,7 @@ export default class Debugger {
    * @param message The message to be printed
    * @param category The category of the message
    */
-  public static warn(message: any, category?: string) {
+  public static warn(message: unknown, category?: string) {
     if (isDev) console.log(Debugger._interpolateMessage(message, 'warn', category));
   }
 
@@ -67,7 +66,7 @@ export default class Debugger {
    * @param message The message to be printed
    * @param category The category of the message
    */
-  public static error(message: any, category?: string) {
+  public static error(message: unknown, category?: string) {
     if (isDev) console.log(Debugger._interpolateMessage(message, 'error', category));
   }
 
@@ -76,7 +75,7 @@ export default class Debugger {
    * @param message The message to be printed
    * @param category The category of the message
    */
-  public static log(message: any, category?: string) {
+  public static log(message: unknown, category?: string) {
     if (isDev) console.log(Debugger._interpolateMessage(message, 'log', category));
   }
 
@@ -85,7 +84,7 @@ export default class Debugger {
    * @param message The message to be printed
    * @param category The category of the message
    */
-  public static success(message: any, category?: string) {
+  public static success(message: unknown, category?: string) {
     if (isDev) console.log(Debugger._interpolateMessage(message, 'success', category));
   }
 }

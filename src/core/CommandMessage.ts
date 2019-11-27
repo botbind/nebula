@@ -26,10 +26,22 @@ export default class CommandMesage {
   }
 
   /**
+   * Whether the message is expired. That is, it is no longer editable
+   */
+  get expired() {
+    const currTime = Date.now();
+
+    return (
+      currTime - (this.editedTimestamp || this.createdTimestamp) >
+      this.client.commandMessageLifetime
+    );
+  }
+
+  /**
    * Reset the internal response counter and delete unneceassry responses
    */
   public reset() {
-    if (!this.client.options.editCommandResponses) return;
+    if (!this.client.shouldEditCommandResponses) return;
 
     if (this._responseIndex < this._responses.length) this._responses.pop()!.delete();
 
@@ -40,7 +52,7 @@ export default class CommandMesage {
    * Delete all the responses of the message
    */
   public deleteResponses() {
-    if (!this.client.options.editCommandResponses) return;
+    if (!this.client.shouldEditCommandResponses) return;
 
     this._responses
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -78,7 +90,7 @@ export default class CommandMesage {
     }
 
     // Only do all the hassle when editCommandResponses or deleteCommandResponses = true
-    if (this.client.options.editCommandResponses) {
+    if (this.client.shouldEditCommandResponses) {
       const currentResponse = this._responses[this._responseIndex];
 
       this._responseIndex += 1;
@@ -93,7 +105,7 @@ export default class CommandMesage {
 
     const message = (await this.channel.send(actualContent, actualOptions)) as Discord.Message;
 
-    if (this.client.options.editCommandResponses) this._responses.push(message);
+    if (this.client.shouldEditCommandResponses) this._responses.push(message);
 
     return message;
   }

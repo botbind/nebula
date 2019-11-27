@@ -19,7 +19,8 @@
     "test": "cross-env NODE_ENV=development nodemon -e ts --exec ts-node src/__tests__",
     "lint": "eslint \"src/**/*.ts\" --report-unused-disable-directives && echo \"No errors found\"",
     "lint:fix": "eslint \"src/**/*.ts\" --fix && echo \"No errors found\"",
-    "types:check": "tsc --noEmit && echo \"No errors found\""
+    "types:check": "tsc --noEmit && echo \"No errors found\"",
+    "test:validator": "ts-node src/validator/test.ts"
   },
   "peerDependencies": {
     "discord.js": "^11.5.1"
@@ -38,12 +39,11 @@
     "nodemon": "^1.18.10",
     "rimraf": "^2.6.3",
     "ts-node": "^8.4.1",
-    "typescript": "^3.6.4"
+    "typescript": "^3.7.2"
   },
   "dependencies": {
-    "@types/lodash.merge": "^4.6.6",
     "colors": "^1.4.0",
     "dayjs": "^1.8.16",
-    "lodash.merge": "^4.6.2"
+    "deepmerge": "^4.2.2"
   }
 }

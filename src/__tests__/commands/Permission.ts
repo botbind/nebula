@@ -4,9 +4,8 @@ export default class PermissionCommand extends Command {
   constructor(addon: Addon, name: string, group: string) {
     super(addon, name, group, {
       name: 'p',
-      permission: {
-        level: 7,
-      },
+      isGuildOnly: true,
+      permLevel: 7,
     });
   }
 

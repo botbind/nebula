@@ -1,7 +1,7 @@
-import Discord, { Message } from 'discord.js';
+import Discord from 'discord.js';
 import Command from './Command';
 import Addon from './Addon';
-import Monitor, { OptionalMonitorOptions } from './Monitor';
+import Monitor, { MonitorOptions } from './Monitor';
 import CommandMessage from './CommandMessage';
 
 export default class Dispatcher extends Monitor {
@@ -13,25 +13,21 @@ export default class Dispatcher extends Monitor {
    * The dispatcher of all Nebula commands
    * @param addon The addon of this dispatcher
    */
-  constructor(addon: Addon, options: OptionalMonitorOptions = {}) {
+  constructor(addon: Addon, options: MonitorOptions = {}) {
     super(addon, 'nebula-dispatcher', 'nebula-ignore', options);
 
     this._commandMessages = new Discord.Collection();
     this._sweepInterval = null;
   }
 
-  private async _dispatchCommandsRecursively(
-    command: Command,
-    message: CommandMessage,
-    args: string[],
-  ) {
+  private async _dispatch(command: Command, message: CommandMessage, args: string[]) {
     if (command.subcommands.length) {
-      const [subcommandName, ...rest] = args;
+      const [subcommandName, ...restArgs] = args;
 
       // If the user doesn't provide the subcommand name
       if (subcommandName == null) {
-        if (command.options.subcommands.defaultToFirst) {
-          this._dispatchCommandsRecursively(command.subcommands[0], message, rest);
+        if (command.shouldDefaultToFirstSubcommand) {
+          this._dispatch(command.subcommands[0], message, restArgs);
           return;
         }
 
@@ -54,10 +50,10 @@ export default class Dispatcher extends Monitor {
       }
 
       subcommands.forEach(subcommand => {
-        this._dispatchCommandsRecursively(subcommand, message, rest);
+        this._dispatch(subcommand, message, restArgs);
       });
     } else {
-      await command.triggerLifecycles(message, args);
+      await command.invokeLifecycles(message, args);
 
       message.reset();
     }
@@ -89,20 +85,6 @@ export default class Dispatcher extends Monitor {
     this._commandMessages.delete(message.id);
   }
 
-  private _sweep() {
-    this._commandMessages.sweep(
-      message =>
-        Date.now() - (message.editedTimestamp || message.createdTimestamp) >
-        this.addon.client.options.commandMessageLifetime,
-    );
-
-    if (this._commandMessages.size === 0) {
-      clearInterval(this._sweepInterval!);
-
-      this._sweepInterval = null;
-    }
-  }
-
   /**
    * Invoked when the command name doesn't resolve to any commands
    * @param message The Nebula message wrapper
@@ -128,16 +110,16 @@ export default class Dispatcher extends Monitor {
   public async run(message: Discord.Message) {
     const [commandPrefix, commandName, commandArgs] = this.parseCommand(message.content);
 
-    if (commandPrefix !== this.addon.client.options.prefix) return;
+    if (commandPrefix !== this.addon.client.prefix) return;
 
-    if (this.addon.client.options.typing) message.channel.startTyping();
+    if (this.addon.client.shouldType) message.channel.startTyping();
 
     // We allow multiple commands to be ran at the same time
     const commands = this.addon.store.commands.filter(
       command => command.name === commandName || command.alias.includes(commandName),
     );
 
-    let commandMessage = this.addon.client.options.editCommandResponses
+    let commandMessage = this.addon.client.shouldEditCommandResponses
       ? this._commandMessages.get(message.id)
       : new CommandMessage(message);
 
@@ -148,8 +130,16 @@ export default class Dispatcher extends Monitor {
 
       this._commandMessages.set(message.id, commandMessage);
 
-      if (!this._sweepInterval) {
-        this._sweepInterval = setInterval(this._sweep.bind(this), 30000);
+      if (this._sweepInterval == null) {
+        this._sweepInterval = setInterval(() => {
+          this._commandMessages.sweep(commandMessageToSweep => commandMessageToSweep.expired);
+
+          if (this._commandMessages.size === 0) {
+            clearInterval(this._sweepInterval!);
+
+            this._sweepInterval = null;
+          }
+        }, 30000);
       }
     }
 
@@ -164,9 +154,9 @@ export default class Dispatcher extends Monitor {
     }
 
     commands.forEach(command => {
-      this._dispatchCommandsRecursively(command, commandMessage!, commandArgs);
+      this._dispatch(command, commandMessage!, commandArgs);
     });
 
-    if (this.addon.client.options.typing) message.channel.stopTyping(true);
+    if (this.addon.client.shouldType) message.channel.stopTyping(true);
   }
 }

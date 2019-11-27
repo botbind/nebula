@@ -4,10 +4,8 @@ export default class GuildLimitCommand extends Command {
   constructor(addon: Addon, name: string, group: string) {
     super(addon, name, group, {
       name: 'g',
-      limit: {
-        time: 5000,
-        scope: 'guild',
-      },
+      duration: 5000,
+      scope: 'guild',
     });
   }
 
@@ -17,7 +15,7 @@ export default class GuildLimitCommand extends Command {
 
   protected async run(message: CommandMessage) {
     message.send(
-      `You have ${this.options.limit.bucket -
+      `You have ${this.bucket -
         this.usage.get(message.guild.id)![0]} time(s) left before cooling down. Scope: Guild`,
     );
   }
