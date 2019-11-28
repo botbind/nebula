@@ -3,22 +3,6 @@ import Ref from './Ref';
 import ValidationError from '../errors/ValidationError';
 import NebulaError from '../errors/NebulaError';
 
-// TODO: Make ref work with default value
-// Potential fix: Validate the dependency before resolving ref
-
-/**
- * The allowed schema types
- */
-export type SchemaTypes =
-  | string
-  | number
-  | boolean
-  | object
-  | Date
-  | SchemaTypes[]
-  | Function
-  | { [key: string]: SchemaTypes };
-
 /**
  * The map of schemas
  */
@@ -27,28 +11,25 @@ export interface SchemaMap {
 }
 
 /**
- * Referenceable value as object
+ * Referenceable value
  */
-export interface ReferenceableObject {
+export interface ReferenceableValue {
   [key: string]: unknown;
 }
 
 /**
- * Referenceable value
- */
-export type ReferenceableValue = ReferenceableObject | unknown[];
-
-/**
  * Converts to an equivalent schema types from a map
  */
-export type ReturnTypes<T extends SchemaMap> = {
-  [K in keyof T]: T[K] extends Schema<infer U> ? U : never;
-};
+export type MapToTypes<T> = T extends SchemaMap
+  ? {
+      [K in keyof T]: T[K] extends Schema<infer U> ? U : never;
+    }
+  : T;
 
 /**
  * The schema rule argument object
  */
-export interface SchemaRuleArg<T extends SchemaTypes> {
+export interface SchemaRuleArg<T> {
   /**
    * The coerced value to validate
    */
@@ -63,17 +44,27 @@ export interface SchemaRuleArg<T extends SchemaTypes> {
    * The Discord message that triggers the validation
    */
   message?: Discord.Message;
+
+  /**
+   * Resolved dependencies
+   */
+  deps: unknown[];
 }
 
 /**
  * The schema rule
  */
-export type SchemaRule<T extends SchemaTypes> = (arg: SchemaRuleArg<T>) => boolean;
+export type SchemaRule<T> = (arg: SchemaRuleArg<T>) => boolean;
+
+/**
+ * The schema rule condition
+ */
+export type StoredSchemaRule<T> = (arg: Omit<SchemaRuleArg<T>, 'deps'>) => boolean;
 
 /**
  * The validation results
  */
-export interface ValidationResults<T extends SchemaTypes> {
+export interface ValidationResults<T> {
   value: T | null;
   errors: ValidationError[];
   pass: boolean;
@@ -101,26 +92,28 @@ export interface ValidatorOptions {
   /**
    * The parent containing the value. Used internally
    */
-  parent?: ReferenceableValue;
+  parent?: ReferenceableValue | unknown[];
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export default abstract class Schema<T extends SchemaTypes = any> {
+export default abstract class Schema<T = any> {
   private _type: string;
 
   private _label: string;
+
+  private _default: T | null;
 
   private _path: string | null;
 
   private _isOptional: boolean;
 
-  // This should be private, however array and object needs to populate defaults before validating
-  // due to the nature of ref
-  public _default: T | null;
-
-  private _rules: SchemaRule<T>[];
+  private _rules: StoredSchemaRule<T>[];
 
   private _errs: ValidationError[];
+
+  // This should be private, however array and object needs to validate indpendent rules first to
+  // resolve optional refs
+  public _independent: boolean;
 
   /**
    * The base constructor which is inherited to create schemas.
@@ -161,6 +154,7 @@ export default abstract class Schema<T extends SchemaTypes = any> {
     this._default = null;
     this._rules = [];
     this._errs = [];
+    this._independent = true;
   }
 
   /**
@@ -225,16 +219,20 @@ export default abstract class Schema<T extends SchemaTypes = any> {
    * @param values The list of allowed values
    */
   public allow(...values: unknown[]) {
-    this.addRule(({ value }) => {
-      const resolved = values.map(value2 => this.resolve(value2));
+    this.addRule(
+      ({ value, deps }) => {
+        const resolved = values.map(value2 => this.resolve(value2));
 
-      if (resolved.length === 0)
-        throw new NebulaError(
-          `The allowed values for ${this._type}.allow must have at least a value`,
-        );
+        if (resolved.length === 0)
+          throw new NebulaError(
+            `The allowed values for ${this._type}.allow must have at least a value`,
+          );
 
-      return values.map(value2 => this.resolve(value2)).includes(value);
-    }, 'allow');
+        return deps.includes(value);
+      },
+      'allow',
+      values,
+    );
 
     return this;
   }
@@ -245,7 +243,7 @@ export default abstract class Schema<T extends SchemaTypes = any> {
    * @param type The type of the validator
    * @param label The label of the validator
    */
-  protected createError(rawValue: unknown, type: string = this._type) {
+  protected createError(rawValue: unknown, type = `${this._type}.base`) {
     return new ValidationError(
       rawValue,
       type,
@@ -274,9 +272,11 @@ export default abstract class Schema<T extends SchemaTypes = any> {
    * Adds a validation rule
    * @param rule The validation rule
    */
-  protected addRule(rule: SchemaRule<T>, type: string) {
+  protected addRule(rule: SchemaRule<T>, type: string, deps: unknown[] = []) {
+    if (this._independent && deps.some(dep => dep instanceof Ref)) this._independent = false;
+
     this._rules.push(ruleArg => {
-      if (rule(ruleArg)) return true;
+      if (rule({ ...ruleArg, deps: deps.map(dep => this.resolve(dep)) })) return true;
 
       this.addError(ruleArg.rawValue, `${this._type}.${type}`);
 
@@ -305,7 +305,7 @@ export default abstract class Schema<T extends SchemaTypes = any> {
         if (path != null && parent != null) {
           const lastSegment = path.split('.').pop()!;
 
-          (parent as ReferenceableObject)[lastSegment] = this._default;
+          (parent as ReferenceableValue)[lastSegment] = this._default;
         }
 
         return { value: this._default, errors: [], pass: true };

@@ -1,5 +1,10 @@
 import Validator from './Validator';
-import Schema, { ValidatorOptions, ReturnTypes, SchemaMap, ValidationResults } from './Schema';
+import Schema, {
+  ValidatorOptions,
+  MapToTypes,
+  ValidationResults,
+  ReferenceableValue,
+} from './Schema';
 import NebulaError from '../errors/NebulaError';
 import Utils from '../utils/Utils';
 
@@ -7,37 +12,27 @@ function isPlainObject(value: unknown): value is object {
   return Object.prototype.toString.call(value) === '[object Object]';
 }
 
-export default class ObjectSchema<T extends SchemaMap> extends Schema<ReturnTypes<T>> {
+export default class ObjectSchema<T> extends Schema<MapToTypes<T>> {
   private _schemaMap: T | null;
 
   /**
    * The schema that represents the object data type
    * ```ts
    * const schema = Validator.object();
-   *
-   * // Pass
-   * const result = schema.validate({});
-   *
-   * // Fail
-   * const result = schema.validate('a');
-   * const result = schema.validate(1);
-   * const result = schema.validate(true);
-   * const result = schema.validate(new Date());
-   * const result = schema.validate([]);
    * ```
-   * Error type(s): `object`
+   * Error type(s): `object.base`
    * @param schemaMap - The map of schemas
    */
-  constructor(schemaMap: T) {
+  constructor(schemaMap?: T) {
     if (schemaMap != null && !isPlainObject(schemaMap))
       throw new NebulaError('The schema map for Nebula.ObjectSchema must be an object');
 
     super('object');
 
-    this._schemaMap = schemaMap;
+    this._schemaMap = schemaMap != null ? schemaMap : null;
   }
 
-  protected check(value: unknown): value is ReturnTypes<T> {
+  protected check(value: unknown): value is MapToTypes<T> {
     return isPlainObject(value);
   }
 
@@ -50,14 +45,16 @@ export default class ObjectSchema<T extends SchemaMap> extends Schema<ReturnType
    * @param num The number of entries
    */
   public length(num: unknown) {
-    this.addRule(({ value }) => {
-      const resolved = this.resolve(num);
+    this.addRule(
+      ({ value, deps }) => {
+        if (typeof deps[0] !== 'number')
+          throw new NebulaError('The number of entries for object.length must be a number');
 
-      if (typeof resolved !== 'number')
-        throw new NebulaError('The number of entries for object.length must be a number');
-
-      return Object.keys(value).length === resolved;
-    }, 'length');
+        return Object.keys(value).length === deps[0];
+      },
+      'length',
+      [num],
+    );
 
     return this;
   }
@@ -71,14 +68,16 @@ export default class ObjectSchema<T extends SchemaMap> extends Schema<ReturnType
    * @param num The number of entries
    */
   public min(num: unknown) {
-    this.addRule(({ value }) => {
-      const resolved = this.resolve(num);
+    this.addRule(
+      ({ value, deps }) => {
+        if (typeof deps[0] !== 'number')
+          throw new NebulaError('The number of entries for object.min must be a number');
 
-      if (typeof resolved !== 'number')
-        throw new NebulaError('The number of entries for object.min must be a number');
-
-      return Object.keys(value).length >= resolved;
-    }, 'min');
+        return Object.keys(value).length >= deps[0];
+      },
+      'min',
+      [num],
+    );
 
     return this;
   }
@@ -92,21 +91,48 @@ export default class ObjectSchema<T extends SchemaMap> extends Schema<ReturnType
    * @param num The number of entries
    */
   public max(num: unknown) {
-    this.addRule(({ value }) => {
-      const resolved = this.resolve(num);
+    this.addRule(
+      ({ value, deps }) => {
+        if (typeof deps[0] !== 'number')
+          throw new NebulaError('The number of entries for object.max must be a number');
 
-      if (typeof resolved !== 'number')
-        throw new NebulaError('The number of entries for object.max must be a number');
-
-      return Object.keys(value).length <= resolved;
-    }, 'max');
+        return Object.keys(value).length <= deps[0];
+      },
+      'max',
+      [num],
+    );
 
     return this;
   }
 
-  private _deepValidate(value: unknown, schemaMap: T | null, options: ValidatorOptions = {}) {
+  /**
+   * Specifies that an object to be an instance of a constructor
+   * ```ts
+   * const schema = Validator.instance();
+   * ```
+   * Error type(s): `object.instance`
+   * @param ctor The constructor to check against
+   */
+  instance(ctor: unknown) {
+    this.addRule(
+      ({ value, deps }) => {
+        if (typeof deps[0] !== 'function')
+          throw new NebulaError(
+            'The constructor to check again for object.instance must be a function',
+          );
+
+        return value instanceof deps[0];
+      },
+      'instance',
+      [ctor],
+    );
+
+    return this;
+  }
+
+  public validate(value: unknown, options: ValidatorOptions = {}) {
     const { shouldAbortEarly = true, path } = options;
-    const finalResults: ValidationResults<ReturnTypes<T>> = {
+    const finalResults: ValidationResults<MapToTypes<T>> = {
       value: null,
       errors: [],
       pass: true,
@@ -114,33 +140,41 @@ export default class ObjectSchema<T extends SchemaMap> extends Schema<ReturnType
     const baseResults = super.validate(value, options);
 
     // Run this.check in case of optional without default value
-    if (schemaMap == null || !baseResults.pass || !this.check(baseResults.value))
+    if (this._schemaMap == null || !baseResults.pass || !this.check(baseResults.value))
       return baseResults;
 
-    if (path == null) Validator.setValue(baseResults.value);
+    if (path == null) Validator.setValue(baseResults.value as ReferenceableValue);
 
-    for (const key of Utils.keysOf(schemaMap)) {
-      const schema = schemaMap[key];
-      const newValue = baseResults.value[key];
-      const newOptions = {
-        ...options,
-        path: path == null ? key : `${path}.${key}`,
-        parent: baseResults.value,
-      };
+    // Partition independent and dependent schemas
+    const partitioned = Utils.partition(
+      Utils.entriesOf(this._schemaMap),
+      ([, schema]) => ((schema as unknown) as Schema)._independent,
+    );
 
-      let result;
-      if (isPlainObject(schema) && !(schema instanceof Schema)) {
-        result = this._deepValidate(newValue, (schema as unknown) as T, newOptions);
-      } else {
-        result = schema.validate(newValue, newOptions);
-      }
+    // Validate independent schemas first, then dependent ones
+    for (const partitionedSchema of partitioned) {
+      for (const [key, schema] of partitionedSchema) {
+        const newValue = baseResults.value[key];
+        const newOptions = {
+          ...options,
+          path: path == null ? key : `${path}.${key}`,
+          parent: baseResults.value as ReferenceableValue,
+        };
 
-      finalResults.errors.push(...result.errors);
+        let result;
+        if (isPlainObject(schema) && !(schema instanceof Schema)) {
+          result = new ObjectSchema(schema).validate(newValue, newOptions);
+        } else {
+          result = ((schema as unknown) as Schema).validate(newValue, newOptions);
+        }
 
-      if (!result.pass) {
-        finalResults.pass = false;
+        finalResults.errors.push(...result.errors);
 
-        if (shouldAbortEarly) return finalResults;
+        if (!result.pass) {
+          finalResults.pass = false;
+
+          if (shouldAbortEarly) return finalResults;
+        }
       }
     }
 
@@ -149,9 +183,5 @@ export default class ObjectSchema<T extends SchemaMap> extends Schema<ReturnType
     finalResults.value = baseResults.value;
 
     return finalResults;
-  }
-
-  public validate(value: unknown, options: ValidatorOptions = {}) {
-    return this._deepValidate(value, this._schemaMap, options);
   }
 }

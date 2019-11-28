@@ -6,18 +6,8 @@ export default class DateSchema extends Schema<Date> {
    * The schema that represents the Date object
    * ```ts
    * const schema = Validator.date();
-   *
-   * // Pass
-   * const result = schema.validate(new Date());
-   *
-   * // Fail
-   * const result = schema.validate('a');
-   * const result = schema.validate(1);
-   * const result = schema.validate(true);
-   * const result = schema.validate([]);
-   * const result = schema.validate({});
    * ```
-   * Error type(s): `date`
+   * Error type(s): `date.base`
    */
   constructor() {
     super('date');
@@ -46,14 +36,18 @@ export default class DateSchema extends Schema<Date> {
    * @param date The date to compare to
    */
   older(date: unknown) {
-    this.addRule(({ value }) => {
-      const resolved = this.resolve(date);
+    this.addRule(
+      ({ value, deps }) => {
+        if (!this.check(deps[0]))
+          throw new NebulaError(
+            'The date to compare to for date.older must be an instance of Date',
+          );
 
-      if (!this.check(resolved))
-        throw new NebulaError('The date to compare to for date.older must be an instance of Date');
-
-      return value >= resolved;
-    }, 'older');
+        return value >= deps[0];
+      },
+      'older',
+      [date],
+    );
 
     return this;
   }
@@ -67,14 +61,18 @@ export default class DateSchema extends Schema<Date> {
    * @param date The date to compare to
    */
   newer(date: unknown) {
-    this.addRule(({ value }) => {
-      const resolved = this.resolve(date);
+    this.addRule(
+      ({ value, deps }) => {
+        if (!this.check(deps[0]))
+          throw new NebulaError(
+            'The date to compare to for date.newer must be an instance of Date',
+          );
 
-      if (!this.check(resolved))
-        throw new NebulaError('The date to compare to for date.newer must be an instance of Date');
-
-      return value <= resolved;
-    }, 'newer');
+        return value <= deps[0];
+      },
+      'newer',
+      [date],
+    );
 
     return this;
   }

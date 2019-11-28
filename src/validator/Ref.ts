@@ -1,5 +1,5 @@
 import Validator from './Validator';
-import { ReferenceableObject } from './Schema';
+import { ReferenceableValue } from './Schema';
 import NebulaError from '../errors/NebulaError';
 
 export default class Ref {
@@ -13,12 +13,12 @@ export default class Ref {
 
   public resolve() {
     const pathSegments = this._path.split('.');
-    let retrieved: unknown = Validator.getValue();
+    let retrieved: ReferenceableValue | unknown = Validator.getValue();
 
     while (pathSegments.length > 0) {
       const segment = pathSegments.shift()!;
 
-      retrieved = (retrieved as ReferenceableObject)[segment];
+      retrieved = (retrieved as ReferenceableValue)[segment];
 
       if (retrieved == null) return null;
     }

@@ -1,26 +1,15 @@
-import Validator from './Validator';
-import Schema, { ValidatorOptions, ValidationResults, SchemaTypes } from './Schema';
+import Schema, { ValidatorOptions, ValidationResults } from './Schema';
 import NebulaError from '../errors/NebulaError';
 
-export default class ArraySchema<T extends SchemaTypes> extends Schema<T[]> {
+export default class ArraySchema<T> extends Schema<T[]> {
   private _schema: Schema<T> | null;
 
   /**
    * The schema that represents the array data type.
    * ```ts
    * const schema = Validator.array();
-   *
-   * // Pass
-   * const result = schema.validate([]);
-   *
-   * // Fail
-   * const result = schema.validate('a');
-   * const result = schema.validate(1);
-   * const result = schema.validate(true);
-   * const result = schema.validate(new Date());
-   * const result = schema.validate({});
    * ```
-   * Error type(s): `array`
+   * Error type(s): `array.base`
    * @param schema The schema of the array items, if applicable
    */
   constructor(schema?: Schema<T>) {
@@ -47,14 +36,16 @@ export default class ArraySchema<T extends SchemaTypes> extends Schema<T[]> {
    * @param num The number of items
    */
   public length(num: unknown) {
-    this.addRule(({ value }) => {
-      const resolved = this.resolve(num);
+    this.addRule(
+      ({ value, deps }) => {
+        if (typeof deps[0] !== 'number')
+          throw new NebulaError('The number of items for array.length must be a number');
 
-      if (typeof resolved !== 'number')
-        throw new NebulaError('The number of items for array.length must be a number');
-
-      return value.length === resolved;
-    }, 'length');
+        return value.length === deps[0];
+      },
+      'length',
+      [num],
+    );
 
     return this;
   }
@@ -68,14 +59,16 @@ export default class ArraySchema<T extends SchemaTypes> extends Schema<T[]> {
    * @param num The number of items
    */
   public min(num: unknown) {
-    this.addRule(({ value }) => {
-      const resolved = this.resolve(num);
+    this.addRule(
+      ({ value, deps }) => {
+        if (typeof deps[0] !== 'number')
+          throw new NebulaError('The number of items for array.min must be a number');
 
-      if (typeof resolved !== 'number')
-        throw new NebulaError('The number of items for array.min must be a number');
-
-      return value.length >= resolved;
-    }, 'min');
+        return value.length >= deps[0];
+      },
+      'min',
+      [num],
+    );
 
     return this;
   }
@@ -89,14 +82,16 @@ export default class ArraySchema<T extends SchemaTypes> extends Schema<T[]> {
    * @param num The number of items
    */
   public max(num: unknown) {
-    this.addRule(({ value }) => {
-      const resolved = this.resolve(num);
+    this.addRule(
+      ({ value, deps }) => {
+        if (typeof deps[0] !== 'number')
+          throw new NebulaError('The number of items for array.max must be a number');
 
-      if (typeof resolved !== 'number')
-        throw new NebulaError('The number of items for array.max must be a number');
-
-      return value.length <= resolved;
-    }, 'max');
+        return value.length <= deps[0];
+      },
+      'max',
+      [num],
+    );
 
     return this;
   }
@@ -115,8 +110,6 @@ export default class ArraySchema<T extends SchemaTypes> extends Schema<T[]> {
     // Run this.check in case of optional without default value
     if (this._schema == null || !baseResult.pass || !this.check(baseResult.value))
       return baseResult;
-
-    if (path == null) Validator.setValue(baseResult.value);
 
     for (let i = 0; i < baseResult.value.length; i += 1) {
       const result = this._schema.validate(baseResult.value[i], {

@@ -6,18 +6,8 @@ export default class StringSchema extends Schema<string> {
    * The schema that represents the string data type
    * ```ts
    * const schema = Validator.string();
-   *
-   * // Pass
-   * const result = schema.validate('a');
-   *
-   * // Fail
-   * const result = schema.validate(1);
-   * const result = schema.validate(true);
-   * const result = schema.validate(new Date());
-   * const result = schema.validate([]);
-   * const result = schema.validate({});
    * ```
-   * Error type(s): `string`
+   * Error type(s): `string.base`
    */
   constructor() {
     super('string');
@@ -36,14 +26,16 @@ export default class StringSchema extends Schema<string> {
    * @param num The length of the string
    */
   public length(num: unknown) {
-    this.addRule(({ value }) => {
-      const resolved = this.resolve(num);
+    this.addRule(
+      ({ value, deps }) => {
+        if (typeof deps[0] !== 'number')
+          throw new NebulaError('The length of the string for string.length must be a number');
 
-      if (typeof resolved !== 'number')
-        throw new NebulaError('The length of the string for string.length must be a number');
-
-      return value.length === resolved;
-    }, 'length');
+        return value.length === deps[0];
+      },
+      'length',
+      [num],
+    );
 
     return this;
   }
@@ -53,14 +45,16 @@ export default class StringSchema extends Schema<string> {
    * @param num The minimum length of the string
    */
   public min(num: unknown) {
-    this.addRule(({ value }) => {
-      const resolved = this.resolve(num);
+    this.addRule(
+      ({ value, deps }) => {
+        if (typeof deps[0] !== 'number')
+          throw new NebulaError('The minimum length of string for string.min must be a number');
 
-      if (typeof resolved !== 'number')
-        throw new NebulaError('The minimum length of string for string.min must be a number');
-
-      return value.length >= resolved;
-    }, 'min');
+        return value.length >= deps[0];
+      },
+      'min',
+      [num],
+    );
 
     return this;
   }
@@ -70,14 +64,16 @@ export default class StringSchema extends Schema<string> {
    * @param length The maximum length of the string
    */
   public max(num: unknown) {
-    this.addRule(({ value }) => {
-      const resolved = this.resolve(num);
+    this.addRule(
+      ({ value, deps }) => {
+        if (typeof deps[0] !== 'number')
+          throw new NebulaError('The maximum length of the string for string.max must be a number');
 
-      if (typeof resolved !== 'number')
-        throw new NebulaError('The maximum length of the string for string.max must be a number');
-
-      return value.length <= resolved;
-    }, 'max');
+        return value.length <= deps[0];
+      },
+      'max',
+      [num],
+    );
 
     return this;
   }
@@ -87,16 +83,18 @@ export default class StringSchema extends Schema<string> {
    * @param regex The regular expression to compare to
    */
   public test(regex: unknown) {
-    this.addRule(({ value }) => {
-      const resolved = this.resolve(regex);
+    this.addRule(
+      ({ value, deps }) => {
+        if (!(deps[0] instanceof RegExp))
+          throw new NebulaError(
+            'The regular expression to compare to for string.test must be an instance of RegExp',
+          );
 
-      if (!(resolved instanceof RegExp))
-        throw new NebulaError(
-          'The regular expression to compare to for string.test must be an instance of RegExp',
-        );
-
-      return resolved.test(value);
-    }, 'test');
+        return deps[0].test(value);
+      },
+      'test',
+      [regex],
+    );
 
     return this;
   }

@@ -6,18 +6,8 @@ export default class NumberSchema extends Schema<number> {
    * The schema that represents the number data type
    * ```ts
    * const schema = Validator.number();
-   *
-   * // Pass
-   * const result = schema.validate(1);
-   *
-   * // Fail
-   * const result = schema.validate('a');
-   * const result = schema.validate(true);
-   * const result = schema.validate(new Date());
-   * const result = schema.validate([]);
-   * const result = schema.validate({});
    * ```
-   * Error type(s): `number`
+   * Error type(s): `number.base`
    */
   constructor() {
     super('number');
@@ -57,14 +47,16 @@ export default class NumberSchema extends Schema<number> {
    * @param num The minimum value
    */
   public min(num: unknown) {
-    this.addRule(({ value }) => {
-      const resolved = this.resolve(num);
+    this.addRule(
+      ({ value, deps }) => {
+        if (!this.check(deps[0]))
+          throw new NebulaError('The minimum value for number.min must be a number');
 
-      if (!this.check(resolved))
-        throw new NebulaError('The minimum value for number.min must be a number');
-
-      return value >= resolved;
-    }, 'min');
+        return value >= deps[0];
+      },
+      'min',
+      [num],
+    );
 
     return this;
   }
@@ -78,14 +70,16 @@ export default class NumberSchema extends Schema<number> {
    * @param num The maximum value
    */
   public max(num: unknown) {
-    this.addRule(({ value }) => {
-      const resolved = this.resolve(num);
+    this.addRule(
+      ({ value, deps }) => {
+        if (!this.check(deps[0]))
+          throw new NebulaError('The maximum value for number.max must be a number');
 
-      if (!this.check(resolved))
-        throw new NebulaError('The maximum value for number.max must be a number');
-
-      return value <= resolved;
-    }, 'max');
+        return value <= deps[0];
+      },
+      'max',
+      [num],
+    );
 
     return this;
   }
@@ -99,14 +93,16 @@ export default class NumberSchema extends Schema<number> {
    * @param num The number to check against
    */
   public multiple(num: unknown) {
-    this.addRule(({ value }) => {
-      const resolved = this.resolve(num);
+    this.addRule(
+      ({ value, deps }) => {
+        if (!this.check(deps[0]))
+          throw new NebulaError('The number to check against for number.multiple must be a number');
 
-      if (!this.check(resolved))
-        throw new NebulaError('The number to check against for number.multiple must be a number');
-
-      return value % resolved === 0;
-    }, 'multiple');
+        return value % deps[0] === 0;
+      },
+      'multiple',
+      [num],
+    );
 
     return this;
   }
@@ -120,14 +116,16 @@ export default class NumberSchema extends Schema<number> {
    * @param num The number to check against
    */
   public divide(num: unknown) {
-    this.addRule(({ value }) => {
-      const resolved = this.resolve(num);
+    this.addRule(
+      ({ value, deps }) => {
+        if (!this.check(deps[0]))
+          throw new NebulaError('The number to check against for number.divide must be a number');
 
-      if (!this.check(resolved))
-        throw new NebulaError('The number to check against for number.divide must be a number');
-
-      return resolved % value === 0;
-    }, 'divide');
+        return deps[0] % value === 0;
+      },
+      'divide',
+      [num],
+    );
 
     return this;
   }
@@ -141,14 +139,16 @@ export default class NumberSchema extends Schema<number> {
    * @param num The number to compare to
    */
   public greater(num: unknown) {
-    this.addRule(({ value }) => {
-      const resolved = this.resolve(num);
+    this.addRule(
+      ({ value, deps }) => {
+        if (!this.check(deps[0]))
+          throw new NebulaError('The number to compare to for number.greater must be a number');
 
-      if (!this.check(resolved))
-        throw new NebulaError('The number to compare to for number.greater must be a number');
-
-      return value > resolved;
-    }, 'greater');
+        return value > deps[0];
+      },
+      'greater',
+      [num],
+    );
 
     return this;
   }
@@ -162,14 +162,16 @@ export default class NumberSchema extends Schema<number> {
    * @param num The number to compare to
    */
   public smaller(num: unknown) {
-    this.addRule(({ value }) => {
-      const resolved = this.resolve(num);
+    this.addRule(
+      ({ value, deps }) => {
+        if (!this.check(deps[0]))
+          throw new NebulaError('The number to compare to for number.smaller must be a number');
 
-      if (!this.check(resolved))
-        throw new NebulaError('The number to compare to for number.smaller must be a number');
-
-      return value < resolved;
-    }, 'smaller');
+        return value < deps[0];
+      },
+      'smaller',
+      [num],
+    );
 
     return this;
   }

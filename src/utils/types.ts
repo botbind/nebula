@@ -1,4 +1,4 @@
-export interface Constructor<T> {
-  /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-explicit-any */
+export interface Constructor<T = any> {
   new (...args: any[]): T;
 }

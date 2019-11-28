@@ -1,11 +1,11 @@
-import Schema, { SchemaMap, SchemaTypes, ReferenceableValue } from './Schema';
+import Schema, { ReferenceableValue } from './Schema';
 import BooleanSchema from './BooleanSchema';
 import NumberSchema from './NumberSchema';
 import StringSchema from './StringSchema';
 import DateSchema from './DateSchema';
 import ArraySchema from './ArraySchema';
 import ObjectSchema from './ObjectSchema';
-import MiscSchema from './MiscSchema';
+import FunctionSchema from './FunctionSchema';
 import Ref from './Ref';
 
 let value: ReferenceableValue = {};
@@ -39,11 +39,15 @@ export default class Validator {
     return new DateSchema();
   }
 
+  public static function<T extends Function>() {
+    return new FunctionSchema<T>();
+  }
+
   /**
    * Creates an array schema that matches the array data type
    * @param schema The schema for the array items
    */
-  public static array<T extends SchemaTypes>(schema?: Schema<T>) {
+  public static array<T>(schema?: Schema<T>) {
     return new ArraySchema(schema);
   }
 
@@ -51,15 +55,8 @@ export default class Validator {
    * Creates an object schema that matches the object data type
    * @param schemaMap The map of schemas
    */
-  public static object<T extends SchemaMap>(schemaMap: T) {
+  public static object<T>(schemaMap?: T) {
     return new ObjectSchema(schemaMap);
-  }
-
-  /**
-   * Creates a schema consisting of miscellaneous rules
-   */
-  public static misc<T extends SchemaTypes>() {
-    return new MiscSchema<T>();
   }
 
   /**

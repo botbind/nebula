@@ -4,19 +4,9 @@ export default class BooleanSchema extends Schema<boolean> {
   /**
    * The schema that represents the boolean data type
    * ```ts
-   * const schema = Validator.boolean().validate(true);
-   *
-   * // Pass
-   * const result = schema.validate(true);
-   *
-   * // Fail
-   * const result = schema.validate('a');
-   * const result = schema.validate(1);
-   * const result = schema.validate(new Date());
-   * const result = schema.validate([]);
-   * const result = schema.validate({});
+   * const schema = Validator.boolean();
    * ```
-   * Error type: `boolean`
+   * Error type: `boolean.base`
    */
   constructor() {
     super('boolean');
