@@ -3,7 +3,6 @@ import Addon from './Addon';
 import JSONProvider from './JSONProvider';
 import Validator from '../validator/Validator';
 import Debugger from '../utils/Debugger';
-import NebulaError from '../errors/NebulaError';
 import { Constructor } from '../utils/types';
 
 /**
@@ -42,28 +41,6 @@ export interface ClientOptions extends Discord.ClientOptions {
 }
 
 const addons: Addon[] = [];
-
-const optionsSchema = Validator.object({
-  shouldType: Validator.boolean()
-    .optional()
-    .default(false),
-  prefix: Validator.string()
-    .optional()
-    .default('!'),
-  owners: Validator.array(Validator.string())
-    .optional()
-    .default([]),
-  shouldEditCommandResponses: Validator.boolean()
-    .optional()
-    .default(false),
-  commandMessageLifetime: Validator.number()
-    .optional()
-    .default(0),
-  provider: Validator.misc<Discord.Collection<string, unknown>>()
-    .inherit(Discord.Collection)
-    .optional()
-    .default(JSONProvider),
-});
 
 export default class Client extends Discord.Client {
   /**
@@ -111,7 +88,27 @@ export default class Client extends Discord.Client {
    * @param options Options of the client
    */
   constructor(options: ClientOptions = {}) {
-    const { value, errors } = optionsSchema.validate(options);
+    const { value, errors } = Validator.object({
+      shouldType: Validator.boolean()
+        .optional()
+        .default(false),
+      prefix: Validator.string()
+        .optional()
+        .default('!'),
+      owners: Validator.array(Validator.string())
+        .optional()
+        .default([]),
+      shouldEditCommandResponses: Validator.boolean()
+        .optional()
+        .default(false),
+      commandMessageLifetime: Validator.number()
+        .optional()
+        .default(0),
+      provider: Validator.function<Constructor<JSONProvider>>()
+        .inherit(Discord.Collection)
+        .optional()
+        .default(JSONProvider),
+    }).validate(options);
 
     if (errors.length > 0) throw errors[0];
 
@@ -121,7 +118,7 @@ export default class Client extends Discord.Client {
       owners,
       shouldEditCommandResponses,
       commandMessageLifetime = shouldEditCommandResponses ? 180000 : 0,
-      provider,
+      provider: Provider,
       ...djsClientOptions
     } = value!;
 
@@ -174,10 +171,13 @@ export default class Client extends Discord.Client {
    * @param addon The addon to inject
    */
   protected inject(addon: Addon) {
-    if (!(addon instanceof Addon))
-      throw new NebulaError(Constants.ERROR_MESSAGES['client.inject.addon'](addon));
+    const { value, errors } = Validator.object<Addon>()
+      .instance(Addon)
+      .validate(addon);
 
-    addons.push(addon);
+    if (errors.length > 0) throw errors[0];
+
+    addons.push(value!);
 
     return this;
   }
