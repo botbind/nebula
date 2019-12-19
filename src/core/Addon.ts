@@ -36,27 +36,27 @@ export default class Addon {
   /**
    * The client of the addon.
    */
-  public client: Client;
+  client: Client;
 
   /**
    * The store of the addon.
    */
-  public store: Store;
+  store: Store;
 
   /**
    * The permissions of the addon.
    */
-  public permissions: Permissions;
+  permissions: Permissions;
 
   /**
    * The dispatcher of the addon.
    */
-  public dispatcher: Dispatcher;
+  dispatcher: Dispatcher;
 
   /**
    * The name of the addon.
    */
-  public name: string;
+  name: string;
 
   /**
    * The entry point of all Nebula resources.
