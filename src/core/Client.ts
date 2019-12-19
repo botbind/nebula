@@ -46,42 +46,42 @@ export default class Client extends Discord.Client {
   /**
    * Whether the client should "type" while processing the command.
    */
-  public shouldType: boolean;
+  shouldType: boolean;
 
   /**
    * The default prefix when the client first boots up.
    */
-  public prefix: string;
+  prefix: string;
 
   /**
    * The discord ids for bot owners of the client.
    */
-  public owners: string[];
+  owners: string[];
 
   /**
    * Whether the responses to commands should be edited/deleted when the user edits/deletes the activating message.
    */
-  public shouldEditCommandResponses: boolean;
+  shouldEditCommandResponses: boolean;
 
   /**
    * The amount of time in milliseconds that the command stays in cache since last edit. Command responses sweeping are disabled if set to 0. This is not recommended as the cache persists.
    */
-  public commandMessageLifetime: number;
+  commandMessageLifetime: number;
 
   /**
    * The data fetched from the database for the client.
    */
-  public provider: Discord.Collection<string, unknown>;
+  provider: Discord.Collection<string, unknown>;
 
   /**
    * The application of the client.
    */
-  public app: Discord.OAuth2Application | null;
+  app: Discord.OAuth2Application | null;
 
   /**
    * Whether the client has become ready to start working.
    */
-  public isReady: boolean;
+  isReady: boolean;
 
   /**
    * The main hub for loading addons.
@@ -165,7 +165,7 @@ export default class Client extends Discord.Client {
    * Inject addons.
    * @param addon The addon to inject.
    */
-  protected inject(addon: Addon) {
+  inject(addon: Addon) {
     const result = L.object<Addon>()
       .instance(Addon)
       .validate(addon);
@@ -180,5 +180,5 @@ export default class Client extends Discord.Client {
   /**
    * Invoked when the client becomes ready to start working.
    */
-  protected async ready?(): Promise<void>;
+  async ready?(): Promise<void>;
 }
