@@ -1,30 +1,47 @@
+import L from '@botbind/lyra';
 import Addon from './Addon';
 
 export default class Resource {
   /**
-   * The addon of the resource
+   * The addon of the resource.
    */
-  protected addon: Addon;
+  addon: Addon;
 
   /**
-   * The name of the resource
+   * The name of the resource.
    */
-  public name: string;
+  name: string;
 
   /**
-   * The group of the resource
+   * The group of the resource.
    */
-  public group: string;
+  group: string;
 
   /**
-   * The base structure for all Nebula resources
-   * @param addon The addon of the resource
-   * @param name The name of the resource
-   * @param group The group of the resource
+   * The base structure for all Nebula resources.
+   * @param addon The addon of the resource.
+   * @param name The name of the resource.
+   * @param group The group of the resource.
    */
-  constructor(addon: Addon, name = '', group = '') {
-    this.addon = addon;
-    this.name = name;
-    this.group = group;
+  constructor(addon: Addon, name: string, group: string) {
+    const result = L.object({
+      addon: L.object()
+        .instance(Addon)
+        .required(),
+      name: L.string().default(''),
+      group: L.string().default(''),
+    }).validate({
+      addon,
+      name,
+      group,
+    });
+
+    if (result.errors !== null) throw result.errors[0];
+
+    const { addon: validatedAddon, name: validatedName, group: validatedGroup } = result.value;
+
+    this.addon = validatedAddon as Addon;
+    this.name = validatedName;
+    this.group = validatedGroup;
   }
 }
