@@ -76,7 +76,7 @@ export default class Addon {
         .inherit(Dispatcher)
         .default(Dispatcher, { literal: true }),
     })
-      .label('addonOptions')
+      .label('Addon options')
       .validate(options);
 
     if (result.errors !== null) throw result.errors[0];
