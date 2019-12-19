@@ -1,41 +1,41 @@
+import L from '@botbind/lyra';
 import Discord from 'discord.js';
 import Addon from './Addon';
 import JSONProvider from './JSONProvider';
-import Validator from '../validator/Validator';
 import Debugger from '../utils/Debugger';
 import { Constructor } from '../utils/types';
 
 /**
- * The options for the client
+ * The options for the client.
  */
 export interface ClientOptions extends Discord.ClientOptions {
   /**
-   * Whether the client should "type" while processing the command
+   * Whether the client should "type" while processing the command.
    */
   shouldType?: boolean;
 
   /**
-   * The default prefix when the client first boots up
+   * The default prefix when the client first boots up.
    */
   prefix?: string;
 
   /**
-   * The discord ids of bot owners of the client
+   * The discord ids of bot owners of the client.
    */
   owners?: string[];
 
   /**
-   * Whether the responses to commands should be edited/deleted when the user edits/deletes the activating message
+   * Whether the responses to commands should be edited/deleted when the user edits/deletes the activating message.
    */
   shouldEditCommandResponses?: boolean;
 
   /**
-   * The amount of time in milliseconds that the command stays in cache since last edit. Command responses sweeping are disabled if set to 0. This is not recommended as the cache persists
+   * The amount of time in milliseconds that the command stays in cache since last edit. Command responses sweeping are disabled if set to 0. This is not recommended as the cache persists.
    */
   commandMessageLifetime?: number;
 
   /**
-   * The customised provider
+   * The customised provider.
    */
   provider?: Constructor<Discord.Collection<string, unknown>>;
 }
@@ -44,83 +44,77 @@ const addons: Addon[] = [];
 
 export default class Client extends Discord.Client {
   /**
-   * Whether the client should "type" while processing the command
+   * Whether the client should "type" while processing the command.
    */
   public shouldType: boolean;
 
   /**
-   * The default prefix when the client first boots up
+   * The default prefix when the client first boots up.
    */
   public prefix: string;
 
   /**
-   * The discord ids for bot owners of the client
+   * The discord ids for bot owners of the client.
    */
   public owners: string[];
 
   /**
-   * Whether the responses to commands should be edited/deleted when the user edits/deletes the activating message
+   * Whether the responses to commands should be edited/deleted when the user edits/deletes the activating message.
    */
   public shouldEditCommandResponses: boolean;
 
   /**
-   * The amount of time in milliseconds that the command stays in cache since last edit. Command responses sweeping are disabled if set to 0. This is not recommended as the cache persists
+   * The amount of time in milliseconds that the command stays in cache since last edit. Command responses sweeping are disabled if set to 0. This is not recommended as the cache persists.
    */
   public commandMessageLifetime: number;
 
   /**
-   * The data fetched from the database for the client
+   * The data fetched from the database for the client.
    */
   public provider: Discord.Collection<string, unknown>;
 
   /**
-   * The application of the client
+   * The application of the client.
    */
   public app: Discord.OAuth2Application | null;
 
   /**
-   * Whether the client has become ready to start working
+   * Whether the client has become ready to start working.
    */
   public isReady: boolean;
 
   /**
-   * The main hub for loading addons
-   * @param options Options of the client
+   * The main hub for loading addons.
+   * @param options Options of the client.
    */
   constructor(options: ClientOptions = {}) {
-    const { value, errors } = Validator.object({
-      shouldType: Validator.boolean()
-        .optional()
-        .default(false),
-      prefix: Validator.string()
-        .optional()
-        .default('!'),
-      owners: Validator.array(Validator.string())
-        .optional()
-        .default([]),
-      shouldEditCommandResponses: Validator.boolean()
-        .optional()
-        .default(false),
-      commandMessageLifetime: Validator.number()
-        .optional()
-        .default(0),
-      provider: Validator.function<Constructor<JSONProvider>>()
+    const result = L.object({
+      shouldType: L.boolean().default(false),
+      prefix: L.string().default('!'),
+      owners: L.array(L.string()).default([]),
+      shouldEditCommandResponses: L.boolean().default(false),
+      commandMessageLifetime: L.number().when(L.ref('shouldEditCommandResponses'), {
+        is: L.boolean().valid(true),
+        then: L.number().default(180000),
+        else: L.number().default(0),
+      }),
+      provider: L.function<Constructor<JSONProvider>>()
         .inherit(Discord.Collection)
-        .optional()
         .default(JSONProvider),
-    }).validate(options);
+      // Allow discord.js options
+    }).validate(options, { allowUnknown: true });
 
-    if (errors.length > 0) throw errors[0];
+    if (result.errors !== null) throw result.errors[0];
 
     const {
       shouldType,
       prefix,
       owners,
       shouldEditCommandResponses,
-      commandMessageLifetime = shouldEditCommandResponses ? 180000 : 0,
+      commandMessageLifetime,
       provider: Provider,
       ...djsClientOptions
-    } = value!;
+    } = result.value;
 
     super(djsClientOptions);
 
@@ -150,7 +144,7 @@ export default class Client extends Discord.Client {
   }
 
   /**
-   * The invite link for the bot
+   * The invite link for the bot.
    */
   get invite() {
     if (this.app == null) return null;
@@ -167,23 +161,23 @@ export default class Client extends Discord.Client {
   }
 
   /**
-   * Inject addons
-   * @param addon The addon to inject
+   * Inject addons.
+   * @param addon The addon to inject.
    */
   protected inject(addon: Addon) {
-    const { value, errors } = Validator.object<Addon>()
+    const result = L.object<Addon>()
       .instance(Addon)
       .validate(addon);
 
-    if (errors.length > 0) throw errors[0];
+    if (result.errors !== null) throw result.errors[0];
 
-    addons.push(value!);
+    addons.push(result.value);
 
     return this;
   }
 
   /**
-   * Invoked when the client becomes ready to start working
+   * Invoked when the client becomes ready to start working.
    */
   protected async ready?(): Promise<void>;
 }
