@@ -101,8 +101,9 @@ export default class Client extends Discord.Client {
       provider: L.function<Constructor<JSONProvider>>()
         .inherit(Discord.Collection)
         .default(JSONProvider),
-      // Allow discord.js options
-    }).validate(options, { allowUnknown: true });
+    })
+      .label('clientOptions')
+      .validate(options, { allowUnknown: true }); // Allow discord.js options
 
     if (result.errors !== null) throw result.errors[0];
 
