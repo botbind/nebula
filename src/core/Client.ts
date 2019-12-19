@@ -98,7 +98,7 @@ export default class Client extends Discord.Client {
         then: L.number().default(180000),
         else: L.number().default(0),
       }),
-      provider: L.function<Constructor<JSONProvider>>()
+      provider: L.function()
         .inherit(Discord.Collection)
         .default(JSONProvider, { literal: true }),
     })
@@ -124,7 +124,7 @@ export default class Client extends Discord.Client {
     this.owners = owners;
     this.shouldEditCommandResponses = shouldEditCommandResponses;
     this.commandMessageLifetime = commandMessageLifetime;
-    this.provider = new Provider(this, 'client');
+    this.provider = new (Provider as Constructor<JSONProvider>)(this, 'client');
     this.app = null;
     this.isReady = false;
 
@@ -166,13 +166,13 @@ export default class Client extends Discord.Client {
    * @param addon The addon to inject.
    */
   inject(addon: Addon) {
-    const result = L.object<Addon>()
+    const result = L.object()
       .instance(Addon)
       .validate(addon);
 
     if (result.errors !== null) throw result.errors[0];
 
-    addons.push(result.value);
+    addons.push(result.value as Addon);
 
     return this;
   }

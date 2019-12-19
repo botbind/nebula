@@ -66,13 +66,13 @@ export default class Addon {
   constructor(client: Client, options: AddonOptions) {
     const result = L.object({
       name: L.string().required(),
-      store: L.function<Constructor<Store>>()
+      store: L.function()
         .inherit(Store)
         .default(Store, { literal: true }),
-      permissions: L.function<Constructor<Permissions>>()
+      permissions: L.function()
         .inherit(Permissions)
         .default(Permissions, { literal: true }),
-      dispatcher: L.function<Constructor<Dispatcher>>()
+      dispatcher: L.function()
         .inherit(Dispatcher)
         .default(Dispatcher, { literal: true }),
     })
@@ -90,9 +90,9 @@ export default class Addon {
 
     this.client = client;
     this.name = name;
-    this.store = new CustomizedStore(this);
-    this.dispatcher = new CustomizedDispatcher(this);
-    this.permissions = new CustomizedPermissions(this);
+    this.store = new (CustomizedStore as Constructor<Store>)(this);
+    this.dispatcher = new (CustomizedDispatcher as Constructor<Dispatcher>)(this);
+    this.permissions = new (CustomizedPermissions as Constructor<Permissions>)(this);
 
     // Has to be done after the addon has done loading other classes
     this.store.load();
