@@ -42,7 +42,7 @@
     "typescript": "^3.7.2"
   },
   "dependencies": {
-    "@botbind/lyra": "0.0.9-beta",
+    "@botbind/lyra": "0.0.10-beta",
     "colors": "^1.4.0",
     "dayjs": "^1.8.16",
     "deepmerge": "^4.2.2"
