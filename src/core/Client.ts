@@ -148,7 +148,7 @@ export default class Client extends Discord.Client {
    * The invite link for the bot.
    */
   get invite() {
-    if (this.app == null) return null;
+    if (this.app === null) return null;
 
     const perms = new Discord.Permissions(3072);
 
