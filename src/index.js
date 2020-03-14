@@ -1,10 +1,15 @@
 /* eslint-disable global-require */
+require('./bootstrap');
+const Lang = require('./lang');
+
 module.exports = {
   ...require('./client'),
   ...require('./colors'),
-  ...require('./logger'),
   ...require('./addon'),
   ...require('./command'),
-  ...require('./provider'),
-  sqliteProvider: require('./sqliteProvider'),
+  ...require('./events'),
+  ...Lang,
+  language: Lang.lang,
+  isLanguage: Lang.isLang,
+  symbols: require('./symbols'),
 };

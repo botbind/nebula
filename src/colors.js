@@ -1,4 +1,5 @@
-const Dust = require('@botbind/dust');
+const assert = require('@botbind/dust/src/assert');
+const attachMethod = require('@botbind/dust/src/attachMethod');
 
 const _colorsSymbol = Symbol('__COLORS__');
 
@@ -12,7 +13,7 @@ class _Colors {
 Object.defineProperty(_Colors.prototype, _colorsSymbol, { value: true });
 
 // Copied from https://github.com/Marak/colors.js/blob/master/lib/styles.js
-const _colors = [
+for (const [name, codes] of [
   ['reset'],
   ['bold', [1, 22]],
   ['dim', [2, 22]],
@@ -52,13 +53,11 @@ const _colors = [
   ['bgBrightMagenta', [105, 49]],
   ['bgBrightCyan', [106, 49]],
   ['bgBrightWhite', [107, 49]],
-];
-
-function _createColorMethod(name, codes) {
+]) {
   const isReset = name === 'reset';
 
-  return function method(str) {
-    Dust.assert(
+  attachMethod(_Colors.prototype, name, function method(str) {
+    assert(
       str === undefined || typeof str === 'string',
       `The parameter str for Colors.${name} must be a string`,
     );
@@ -68,19 +67,14 @@ function _createColorMethod(name, codes) {
 
     if (str !== undefined) {
       if (!isReset)
-        for (const [opening, closing] of [...this._styles].reverse()) {
+        for (const [opening, closing] of [...this._styles].reverse())
           str = `\x1b[${opening}m${str}\x1b[${closing}m`;
-        }
 
       return str;
     }
 
     return this;
-  };
-}
-
-for (const [name, codes] of _colors) {
-  Dust.attachMethod(_Colors.prototype, name, _createColorMethod(name, codes));
+  });
 }
 
 function colors(str) {

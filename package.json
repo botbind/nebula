@@ -23,7 +23,7 @@
     "test": "jest && tsc && echo \"No errors found\"",
     "test:coverage": "jest --coverage",
     "test:watch": "jest --watchAll",
-    "start": "cd tests && nodemon"
+    "start": "nodemon tests"
   },
   "peerDependencies": {
     "discord.js": "^12.0.0"

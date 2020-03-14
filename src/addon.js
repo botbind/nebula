@@ -1,109 +1,202 @@
+const assert = require('@botbind/dust/src/assert');
+const isObject = require('@botbind/dust/src/isObject');
+const path = require('path');
 const fs = require('fs').promises;
-const nodePath = require('path');
-const Dust = require('@botbind/dust');
+const symbols = require('./symbols');
+const _Resource = require('./internals/_resource');
+const _runCommands = require('./internals/_runCommands');
 
 const _addonSymbol = Symbol('__ADDON__');
-const _resourceTypes = ['commands'];
+const _types = ['commands', 'tasks', 'events'];
 
 class _Addon {
-  constructor(opts) {
-    Dust.assert(Dust.isObject(opts), 'The parameter opts for addon must be an object');
-
-    const { name, dispatch, ...actualOpts } = {
-      public: false,
-      ...opts,
-    };
-
-    Dust.assert(typeof name === 'string', 'The option name for addon must be a string');
-
-    Dust.assert(
-      typeof actualOpts.baseDir === 'string',
-      'The option baseDir for addon',
-      name,
-      'must be a string',
-    );
-
-    Dust.assert(
-      typeof actualOpts.public === 'boolean',
-      'The option public for addon',
-      name,
-      'must be a boolean',
-    );
-
-    const hasDispatch = dispatch !== undefined;
-
-    Dust.assert(
-      !hasDispatch || typeof dispatch === 'function',
-      'The option dispatch for addon mustbe a function',
-    );
-
-    if (hasDispatch) Dust.attachMethod(this, 'dispatch', dispatch);
-
+  constructor({ name, ...opts }) {
     this.client = null;
     this.name = name;
-    this.opts = actualOpts;
-    this.commands = [];
+    this.opts = opts;
+    // Addon-specific variable container
+    this.register = {};
+
+    // Resources
+    this.lang = null;
+
+    for (const type of _types) this[type] = [];
   }
 
-  async initialize() {
-    for (const type of _resourceTypes) {
-      const path = nodePath.resolve(this.opts.baseDir, type);
+  describe() {
+    const desc = {};
 
-      // Make a new directory if not exists
+    desc.name = this.name;
+
+    for (const type of _types)
+      if (this[type].length > 0) desc[type] = this[type].map(resource => resource.describe());
+
+    if (this.lang !== null) desc.lang = this.lang.describe();
+
+    return desc;
+  }
+
+  async initialize(client) {
+    this.client = client;
+
+    for (const type of [..._types, 'languages']) {
+      const isLang = type === 'languages';
+      const folderPath = path.resolve(this.opts.baseDir, type);
+      let folderStat;
+
       try {
-        await fs.access(path);
+        folderStat = await fs.lstat(folderPath);
       } catch (err) {
-        await fs.mkdir(path, { recursive: true });
+        if (err.code !== 'ENOENT') {
+          this.error('addon.lstat', { err, path: folderPath });
+
+          process.exit(1);
+        }
       }
 
-      // Read the content of the folder
-      const filenames = await fs.readdir(path);
+      if (folderStat === undefined)
+        try {
+          await fs.mkdir(folderPath, { recursive: true });
+        } catch (err) {
+          this.error(err, 'addon.mkdir', { err, path: folderPath });
 
-      const resourceNames = filenames.filter(filename => {
-        const ext = nodePath.extname(filename);
+          process.exit(1);
+        }
+      else if (folderStat.isFile()) {
+        // Critical
+        this.error('addon.isFile', { path: folderPath });
+
+        process.exit(1);
+      }
+
+      let filenames = await fs.readdir(folderPath);
+
+      filenames = filenames.filter(filename => {
+        const ext = path.extname(filename);
 
         return ext === '.js' || ext === '.ts';
       });
 
-      // Loop through all the filtered files
-      for (const resourceName of resourceNames) {
-        const resourcePath = nodePath.resolve(path, resourceName);
-        const stats = await fs.lstat(resourcePath);
+      for (const filename of filenames) {
+        const filePath = path.resolve(folderPath, filename);
+        let fileStat;
 
-        if (stats.isDirectory()) continue;
+        try {
+          fileStat = await fs.lstat(filePath);
+        } catch (err) {
+          // Critical
+          this.error('addon.lstat', { err, path: filePath });
+
+          process.exit(1);
+        }
+
+        if (fileStat.isDirectory()) continue;
 
         // eslint-disable-next-line
-        const req = require(resourcePath);
+        const req = require(filePath);
         const resource = req.__esModule ? req.default : req;
 
-        resource.client = this.client;
-        resource.addon = this;
+        assert(
+          _Resource.isResource(resource),
+          'The resource of path',
+          filePath,
+          'must be valid resource',
+        );
 
-        await resource.initialize();
+        if (isLang && resource.name !== this.client.opts.lang) continue;
+
+        await resource.initialize(client, this);
+
+        if (isLang) {
+          this.lang = resource;
+
+          break;
+        }
 
         this[type].push(resource);
       }
     }
+
+    if (this.opts.initialize !== undefined)
+      try {
+        await this.opts.initialize(this);
+      } catch (err) {
+        this.error('addon.initialize', { err });
+      }
   }
 
-  dispatch(message) {
+  async run(message) {
+    if (this.opts.run !== undefined) {
+      this.opts.run(this, message);
+
+      return;
+    }
+
     const prefix = this.client.opts.prefix;
     const content = message.content;
 
-    if (!content.startsWith(prefix)) return;
+    if (!content.startsWith(prefix) || message.author.bot) return;
 
-    const command = content.slice(prefix.length);
-    const commands = this.commands.filter(
-      ({ name, alias }) => name === command || alias.includes(command),
-    );
+    const [name, ...args] = content.slice(prefix.length).split(/ +/);
+    const notFound = await _runCommands(message, name, args, this.commands);
 
-    for (const foundCommand of commands) foundCommand.dispatch(message);
+    if (notFound) this.error('addon.commandNotFound', { name, args, message });
+  }
+
+  async error(code, ctx) {
+    if (this.opts.error !== undefined) {
+      const result = await this.opts.error(this, code, ctx);
+
+      if (result !== symbols.next) return;
+    }
+
+    if (code === 'addon.lstat')
+      this.client.logger.error('Cannot retrieve status of path', ctx.path, 'due to', ctx.err);
+
+    if (code === 'addon.mkdir')
+      this.client.logger.error('Cannot make path,', ctx.path, 'due to', ctx.err);
+
+    if (code === 'addon.isFile')
+      this.client.logger.error('Path ', ctx.path, 'must be a folder instead of a file');
+
+    if (code === 'addon.initialize')
+      this.client.logger.error(
+        'Cannot run the custom initializer for addon',
+        this.name,
+        'due to',
+        ctx.err,
+      );
+
+    if (code === 'addon.commandNotFound')
+      ctx.message.channel.send(`Command ${ctx.name} not found. Please try again`);
   }
 }
 
 Object.defineProperty(_Addon.prototype, _addonSymbol, { value: true });
 
 function addon(opts = {}) {
+  assert(isObject(opts), 'The parameter opts for addon must be an object');
+
+  assert(typeof opts.name === 'string', 'The option name for addon must be a string');
+
+  assert(
+    typeof opts.baseDir === 'string',
+    'The option baseDir for addon',
+    opts.name,
+    'must be a string',
+  );
+
+  ['initialize', 'run', 'error'].forEach(optName =>
+    assert(
+      opts[optName] === undefined || typeof opts[optName] === 'function',
+      'The option',
+      optName,
+      'for addon',
+      opts.name,
+      'must be a function',
+    ),
+  );
+
   return new _Addon(opts);
 }
 
