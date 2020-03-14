@@ -50,7 +50,7 @@ class _Command extends _Resource.Resource {
     };
   }
 
-  cooldown(message, threshold, scope) {
+  cooldown(message, threshold) {
     assert(
       message instanceof Discord.Message,
       'The parameter message for Command.cooldown must be a valid discord message',
@@ -59,11 +59,6 @@ class _Command extends _Resource.Resource {
     assert(
       typeof threshold === 'number',
       'The parameter threshold for Command.cooldown must be a number greater than 0',
-    );
-
-    assert(
-      scope === 'user' || scope === 'guild',
-      'The parameter scope for Command.cooldown must be either user or guild',
     );
 
     this._cooldowns[message.author.id] = new _CooldownEntry(threshold);
