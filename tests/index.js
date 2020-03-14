@@ -1,3 +1,4 @@
+require('dotenv/config');
 const Nebula = require('../src');
 const Repeater = require('./addons/repeater');
 
@@ -11,7 +12,7 @@ client.on('nebulaReady', () => {
   client.logger.success('Client ready!');
 });
 
-client.login('Njg1OTMxNjgxOTk5MjI0ODU2.XmqfOw.GtWbPFWe29vUCZV4cajBTF2mmwg');
+client.login(process.env.NODE_ENV.DISCORD_TOKEN);
 
 process.on('unhandledRejection', err => {
   console.log(err);
