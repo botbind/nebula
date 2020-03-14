@@ -1,6 +1,26 @@
 import L from '@botbind/lyra';
 import Addon from './Addon';
 
+/**
+ * The options for the resource.
+ */
+export interface ResourceOptions {
+  /**
+   * The addon of the resource.
+   */
+  addon: Addon;
+
+  /**
+   * The file name of the resource.
+   */
+  filename: string;
+
+  /**
+   * The group of the resource.
+   */
+  group: string;
+}
+
 export default class Resource {
   /**
    * The addon of the resource.
@@ -8,9 +28,9 @@ export default class Resource {
   addon: Addon;
 
   /**
-   * The name of the resource.
+   * The file name of the resource.
    */
-  name: string;
+  filename: string;
 
   /**
    * The group of the resource.
@@ -23,25 +43,23 @@ export default class Resource {
    * @param name The name of the resource.
    * @param group The group of the resource.
    */
-  constructor(addon: Addon, name: string, group: string) {
+  constructor(opts: ResourceOptions) {
     const result = L.object({
       addon: L.object()
         .instance(Addon)
         .required(),
-      name: L.string().default(''),
+      filename: L.string().default(''),
       group: L.string().default(''),
-    }).validate({
-      addon,
-      name,
-      group,
-    });
+    })
+      .label('Resource options')
+      .validate(opts);
 
     if (result.errors !== null) throw result.errors[0];
 
-    const { addon: validatedAddon, name: validatedName, group: validatedGroup } = result.value;
+    const { addon, filename, group } = result.value;
 
-    this.addon = validatedAddon as Addon;
-    this.name = validatedName;
-    this.group = validatedGroup;
+    this.addon = addon as Addon;
+    this.filename = filename;
+    this.group = group;
   }
 }

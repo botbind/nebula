@@ -11,7 +11,7 @@ export default class Permissions extends Discord.Collection<number, PermissionCh
   /**
    * The addon that permissions are applied to
    */
-  protected addon: Addon;
+  addon: Addon;
 
   /**
    * The main hub for interacting with permissions
@@ -34,7 +34,7 @@ export default class Permissions extends Discord.Collection<number, PermissionCh
    * @param level The level of the permission
    * @param message The created message
    */
-  public async checkExact(level: number, message: Discord.Message) {
+  async checkExact(level: number, message: Discord.Message) {
     const check = this.get(level);
 
     if (check == null) throw new NebulaError(`Permission level ${level} not found`);
@@ -49,7 +49,7 @@ export default class Permissions extends Discord.Collection<number, PermissionCh
    * @param level The level of the permission
    * @param message The created message
    */
-  public async check(level: number, message: Discord.Message) {
+  async check(level: number, message: Discord.Message) {
     for (const [permissionLevel, permissionCheck] of this) {
       if (permissionLevel > level) {
         const result = await permissionCheck(message);

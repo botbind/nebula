@@ -1,16 +1,20 @@
 import L from '@botbind/lyra';
 import Client from './Client';
-import Store from './Store';
+import Store, { StoreConstructor } from './Store';
 import Dispatcher from './Dispatcher';
 import Permissions from './Permissions';
 import Event from './Event';
 import Debugger from '../utils/Debugger';
-import { Constructor } from '../utils/types';
 
 /**
  * The options for the addon.
  */
 export interface AddonOptions {
+  /**
+   * The client of the addon.
+   */
+  client: Client;
+
   /**
    * The name of the addon.
    */
@@ -19,7 +23,7 @@ export interface AddonOptions {
   /**
    * The customised implementation of `Store`.
    */
-  store?: Constructor<Store>;
+  store?: StoreConstructor;
 
   /**
    * The customised implementation of `Dispatcher`.
@@ -60,11 +64,13 @@ export default class Addon {
 
   /**
    * The entry point of all Nebula resources.
-   * @param client The client of the addon.
    * @param options The options of the addon.
    */
-  constructor(client: Client, options: AddonOptions) {
+  constructor(options: AddonOptions) {
     const result = L.object({
+      client: L.object()
+        .instance(Client)
+        .required(),
       name: L.string().required(),
       store: L.function()
         .inherit(Store)
@@ -82,15 +88,16 @@ export default class Addon {
     if (result.errors !== null) throw result.errors[0];
 
     const {
+      client,
       name,
       store: CustomizedStore,
       dispatcher: CustomizedDispatcher,
       permissions: CustomizedPermissions,
     } = result.value;
 
-    this.client = client;
+    this.client = client as Client;
     this.name = name;
-    this.store = new (CustomizedStore as Constructor<Store>)(this);
+    this.store = new (CustomizedStore as StoreConstructor)({ addon: this });
     this.dispatcher = new (CustomizedDispatcher as Constructor<Dispatcher>)(this);
     this.permissions = new (CustomizedPermissions as Constructor<Permissions>)(this);
 
@@ -128,7 +135,7 @@ export default class Addon {
       this.dispatcher.invokeLifecycles(message);
     });
 
-    if (this.client.shouldEditCommandResponses)
+    if (this.client.editCommandResponses)
       this.client
         .on('messageUpdate', (oldMessage, newMessage) => {
           if (oldMessage.content === newMessage.content) return;
@@ -141,4 +148,8 @@ export default class Addon {
 
     Debugger.success(`${this.constructor.name} injected`);
   }
+}
+
+export interface AddonConstructor {
+  new (options: AddonOptions): Addon;
 }

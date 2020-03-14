@@ -1,9 +1,9 @@
 import L from '@botbind/lyra';
 import Discord from 'discord.js';
 import Addon from './Addon';
-import JSONProvider from './JSONProvider';
+import Provider, { ProviderConstructor } from './Provider';
+import JsonProvider from './JsonProvider';
 import Debugger from '../utils/Debugger';
-import { Constructor } from '../utils/types';
 
 /**
  * The options for the client.
@@ -12,7 +12,7 @@ export interface ClientOptions extends Discord.ClientOptions {
   /**
    * Whether the client should "type" while processing the command.
    */
-  shouldType?: boolean;
+  typing?: boolean;
 
   /**
    * The default prefix when the client first boots up.
@@ -20,24 +20,26 @@ export interface ClientOptions extends Discord.ClientOptions {
   prefix?: string;
 
   /**
-   * The discord ids of bot owners of the client.
+   * The user ids of bot owners of the client.
    */
   owners?: string[];
 
   /**
-   * Whether the responses to commands should be edited/deleted when the user edits/deletes the activating message.
+   * Whether the responses to commands should be altered when the user edits/deletes the activating
+   * message.
    */
-  shouldEditCommandResponses?: boolean;
+  editCommandResponses?: boolean;
 
   /**
-   * The amount of time in milliseconds that the command stays in cache since last edit. Command responses sweeping are disabled if set to 0. This is not recommended as the cache persists.
+   * The amount of time in milliseconds that the command stays in cache since last edit. Command
+   * responses sweeping are disabled if set to 0. This is not recommended as the cache persists.
    */
   commandMessageLifetime?: number;
 
   /**
-   * The customised provider.
+   * The customised provider constructor. It must inherit the `Provider` base structure.
    */
-  provider?: Constructor<Discord.Collection<string, unknown>>;
+  provider?: ProviderConstructor;
 }
 
 const addons: Addon[] = [];
@@ -46,7 +48,7 @@ export default class Client extends Discord.Client {
   /**
    * Whether the client should "type" while processing the command.
    */
-  shouldType: boolean;
+  typing: boolean;
 
   /**
    * The default prefix when the client first boots up.
@@ -54,24 +56,26 @@ export default class Client extends Discord.Client {
   prefix: string;
 
   /**
-   * The discord ids for bot owners of the client.
+   * The user ids for bot owners of the client.
    */
   owners: string[];
 
   /**
-   * Whether the responses to commands should be edited/deleted when the user edits/deletes the activating message.
+   * Whether the responses to commands should be altered when the user edits/deletes the activating
+   * message.
    */
-  shouldEditCommandResponses: boolean;
+  editCommandResponses: boolean;
 
   /**
-   * The amount of time in milliseconds that the command stays in cache since last edit. Command responses sweeping are disabled if set to 0. This is not recommended as the cache persists.
+   * The amount of time in milliseconds that the command stays in cache since last edit. Command
+   * responses sweeping are disabled if set to 0. This is not recommended as the cache persists.
    */
   commandMessageLifetime: number;
 
   /**
-   * The data fetched from the database for the client.
+   * The database provider for the client.
    */
-  provider: Discord.Collection<string, unknown>;
+  provider: Provider;
 
   /**
    * The application of the client.
@@ -89,18 +93,18 @@ export default class Client extends Discord.Client {
    */
   constructor(options: ClientOptions = {}) {
     const result = L.object({
-      shouldType: L.boolean().default(false),
+      typing: L.boolean().default(false),
       prefix: L.string().default('!'),
       owners: L.array(L.string()).default([]),
-      shouldEditCommandResponses: L.boolean().default(false),
-      commandMessageLifetime: L.number().when(L.ref('shouldEditCommandResponses'), {
+      editCommandResponses: L.boolean().default(false),
+      commandMessageLifetime: L.number().when(L.ref('editCommandResponses'), {
         is: L.boolean().valid(true),
         then: L.number().default(180000),
         else: L.number().default(0),
       }),
       provider: L.function()
-        .inherit(Discord.Collection)
-        .default(JSONProvider, { literal: true }),
+        .inherit(Provider)
+        .default(JsonProvider, { literal: true }),
     })
       .label('Client options')
       .validate(options, { allowUnknown: true }); // Allow discord.js options
@@ -108,23 +112,26 @@ export default class Client extends Discord.Client {
     if (result.errors !== null) throw result.errors[0];
 
     const {
-      shouldType,
+      typing,
       prefix,
       owners,
-      shouldEditCommandResponses,
+      editCommandResponses,
       commandMessageLifetime,
-      provider: Provider,
+      provider: CustomizedProvider,
       ...djsClientOptions
     } = result.value;
 
     super(djsClientOptions);
 
-    this.shouldType = shouldType;
+    this.typing = typing;
     this.prefix = prefix;
     this.owners = owners;
-    this.shouldEditCommandResponses = shouldEditCommandResponses;
+    this.editCommandResponses = editCommandResponses;
     this.commandMessageLifetime = commandMessageLifetime;
-    this.provider = new (Provider as Constructor<JSONProvider>)(this, 'client');
+    this.provider = new (CustomizedProvider as ProviderConstructor)({
+      client: this,
+      name: 'client',
+    });
     this.app = null;
     this.isReady = false;
 
@@ -162,7 +169,7 @@ export default class Client extends Discord.Client {
   }
 
   /**
-   * Inject addons.
+   * Injects addons.
    * @param addon The addon to inject.
    */
   inject(addon: Addon) {

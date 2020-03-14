@@ -58,7 +58,7 @@ export interface CommandOptions {
   /**
    * The required Discord permissions of the command
    */
-  requiredPerms?: Discord.PermissionResolvable[];
+  requiredPerms?: Discord.PermissionResolvable;
 
   /**
    * The number of times the command can be ran in a specified amount of time. Cooldown is disabled if set to 0

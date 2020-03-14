@@ -1,5 +1,6 @@
+import L from '@botbind/lyra';
 import Addon from './Addon';
-import Resource from './Resource';
+import Resource, { ResourceOptions } from './Resource';
 import Util from './Util';
 import Debugger from './Debugger';
 import NebulaError from './NebulaError';
@@ -8,7 +9,7 @@ import * as Constants from './constants';
 /**
  * The options for the event
  */
-export interface EventOptions {
+export interface EventOptions extends ResourceOptions {
   /**
    * The name of the event
    */
@@ -24,7 +25,7 @@ export default abstract class Event extends Resource {
   /**
    * Whether the event should only be ran once then unloaded
    */
-  public once: boolean;
+  once: boolean;
 
   /**
    * The base structure for all Nebula events
@@ -33,21 +34,12 @@ export default abstract class Event extends Resource {
    * @param group The group of the event
    * @param options The options for the event
    */
-  constructor(addon: Addon, name: string, group: string, options: EventOptions = {}) {
-    if (Constants.IS_DEV && !Util.isObject(options))
-      throw new NebulaError(Constants.ERROR_MESSAGES['event.options']);
+  constructor(options: EventOptions) {
+    const result = L.object({})
+      .label('Event options')
+      .validate(options);
 
-    const { name: nameFromOptions = '', once = false } = options;
-
-    if (Constants.IS_DEV) {
-      if (typeof nameFromOptions !== 'string')
-        throw new NebulaError(Constants.ERROR_MESSAGES['event.options.name']);
-
-      if (typeof once !== 'boolean')
-        throw new NebulaError(Constants.ERROR_MESSAGES['event.options.once']);
-    }
-
-    super(addon, nameFromOptions == null ? name : nameFromOptions, group);
+    super({ addon, filename, group });
 
     this.once = once;
   }
@@ -56,7 +48,7 @@ export default abstract class Event extends Resource {
    * Invoke all the lifecycle methods
    * @param args The arguments of the event
    */
-  public invokeLifecycles(...args: unknown[]) {
+  invokeLifecycles(...args: unknown[]) {
     Debugger.info(`${this.constructor.name} run`, 'Lifecycle');
 
     this.run(...args);
@@ -66,5 +58,5 @@ export default abstract class Event extends Resource {
    * Invoked when the event runs
    * @param args The arguments of the event
    */
-  protected abstract run(...args: unknown[]): Promise<void>;
+  abstract run(...args: unknown[]): Promise<void>;
 }
