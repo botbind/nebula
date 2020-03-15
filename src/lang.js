@@ -1,9 +1,12 @@
 const assert = require('@botbind/dust/src/assert');
+const display = require('@botbind/dust/src/display');
 const isObject = require('@botbind/dust/src/isObject');
 const clone = require('@botbind/dust/src/clone');
+const get = require('@botbind/dust/src/get');
 const _Resource = require('./internals/_resource');
 
 const _langSymbol = Symbol('__EVENT__');
+const _defaultSymbol = Symbol('__DEFAULT__');
 
 class _Lang extends _Resource.Resource {
   constructor({ name, dictionary }) {
@@ -19,17 +22,22 @@ class _Lang extends _Resource.Resource {
     };
   }
 
-  render(term, local = {}) {
-    assert(typeof term === 'string', 'The parameter term for Lang.render must be a string');
+  render(key, terms = {}) {
+    assert(typeof key === 'string', 'The parameter key for Lang.render must be a string');
 
-    assert(isObject(local), 'The parameter local for Lang.render must be an object');
+    assert(isObject(terms), 'The parameter local for Lang.render must be an object');
 
-    const definition = this._dictionary[term];
+    const template = this._dictionary[key];
 
-    assert(definition !== undefined, 'Definition for term', term, 'not found');
+    assert(template !== undefined, 'Template for key', key, 'not found');
 
-    // TODO: populate locals
-    return definition;
+    return template.replace(/{([a-zA-z0-9]+)}/g, (_, match) => {
+      const found = get(terms, match, { default: _defaultSymbol });
+
+      assert(found !== _defaultSymbol, 'Term', match, 'not found');
+
+      return display(found);
+    });
   }
 }
 

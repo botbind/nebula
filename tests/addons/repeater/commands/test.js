@@ -32,8 +32,9 @@ const italic = Nebula.command({
       command._count = 0;
     }
 
-    message.channel.send(command.addon.lang.render('good morning'));
-    message.channel.send(`*${args}*`);
+    message.channel.send(
+      command.addon.lang.render('said', { author: message.author.username, content: `*${args}*` }),
+    );
   },
 });
 
