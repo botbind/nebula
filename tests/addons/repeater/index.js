@@ -8,7 +8,7 @@ module.exports = Nebula.addon({
   initialize: addon => {
     addon.client.logger.success('Addon initialized!');
 
-    addon.register.report = description =>
+    addon.vars.report = description =>
       new Discord.MessageEmbed()
         .setColor('RED')
         .setTitle('Error')
@@ -18,7 +18,7 @@ module.exports = Nebula.addon({
   error: (addon, code, ctx) => {
     if (code === 'addon.commandNotFound') {
       ctx.message.channel.send({
-        embed: addon.register.report('Command not found, please try again'),
+        embed: addon.vars.report('Command not found, please try again'),
       });
 
       return;

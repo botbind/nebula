@@ -8,6 +8,7 @@ module.exports = {
   ...require('./addon'),
   ...require('./command'),
   ...require('./events'),
+  ...require('./provider'),
   ...Lang,
   language: Lang.lang,
   isLanguage: Lang.isLang,

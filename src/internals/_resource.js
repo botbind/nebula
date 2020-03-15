@@ -8,6 +8,7 @@ const _resourceSymbol = Symbol('__RESOURCE__');
 class _Resource {
   constructor(name) {
     this.name = name;
+    this.vars = {};
     this.client = null;
     this.addon = null;
   }

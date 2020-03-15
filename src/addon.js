@@ -18,7 +18,7 @@ class _Addon {
     this.name = name;
     this.opts = opts;
     // Addon-specific variable container
-    this.register = {};
+    this.vars = {};
 
     // Resources
     this.lang = null;

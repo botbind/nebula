@@ -21,15 +21,15 @@ const italic = Nebula.command({
     .required(),
 
   initialize: command => {
-    command._count = 0;
+    command.vars._count = 0;
   },
 
   run: (command, message, args) => {
-    command._count++;
+    command.vars._count++;
 
-    if (command._count === 3) {
-      command.cooldown(message, 5000, 'user');
-      command._count = 0;
+    if (command.vars._count === 3) {
+      command.cooldowns.add(message, 5000, 'user');
+      command.vars._count = 0;
     }
 
     message.channel.send(
@@ -47,7 +47,7 @@ module.exports = Nebula.command({
   error: (command, code, ctx) => {
     if (code === 'command.args') {
       ctx.message.channel.send({
-        embed: command.addon.register.report(ctx.err.message),
+        embed: command.addon.vars.report(ctx.err.message),
       });
 
       return;

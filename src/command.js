@@ -31,6 +31,86 @@ class _CooldownEntry {
   }
 }
 
+function _nameFromScope(scope) {
+  return `_${scope}s`;
+}
+
+function _isValidScope(scope) {
+  return scope === 'user' || scope === 'guild';
+}
+
+function _idFromScope(message, scope) {
+  return scope === 'user' ? message.author.id : message.guild.id;
+}
+
+class _Cooldowns {
+  constructor() {
+    this._users = {};
+    this._guilds = {};
+  }
+
+  add(message, threshold, scope = 'user') {
+    _assertDiscord.message('Cooldowns.add', message);
+
+    assert(
+      typeof threshold === 'number',
+      'The parameter threshold for Cooldowns.add must be a number greater than 0',
+    );
+
+    assert(
+      _isValidScope(scope),
+      'The parameter scope for Cooldowns.add must be either user or guild',
+    );
+
+    this[_nameFromScope(scope)][_idFromScope(message, scope)] = new _CooldownEntry(threshold);
+
+    return this;
+  }
+
+  reset(scope) {
+    assert(
+      scope === undefined || _isValidScope(scope),
+      'The parameter scope for Cooldowns.reset must be either user or guild',
+    );
+
+    if (scope === undefined) {
+      this._users = {};
+      this._guilds = {};
+
+      return this;
+    }
+
+    this[_nameFromScope(scope)] = {};
+
+    return this;
+  }
+
+  remove(message, scope = 'user') {
+    _assertDiscord.message('Cooldowns.remove', message);
+
+    assert(
+      _isValidScope(scope),
+      'The parameter scope for Cooldowns.remove must be either user or guild',
+    );
+
+    delete this[_nameFromScope(scope)][_idFromScope(message, scope)];
+  }
+
+  active(message) {
+    _assertDiscord.message('Cooldowns.check', message);
+
+    for (const scope of ['user', 'guild']) {
+      const entry = this[_nameFromScope(scope)][_idFromScope(message, scope)];
+
+      if (entry !== undefined && entry.active) return entry;
+
+      this.remove(message, scope);
+    }
+
+    return false;
+  }
+}
+
 class _Command extends _Resource.Resource {
   constructor({ name, description, alias, ...opts }) {
     super(name);
@@ -39,7 +119,7 @@ class _Command extends _Resource.Resource {
     this.alias = alias;
     this.opts = opts;
 
-    this._cooldowns = {};
+    this.cooldowns = new _Cooldowns();
   }
 
   describe() {
@@ -56,22 +136,6 @@ class _Command extends _Resource.Resource {
       desc.subcommands = this.opts.subcommands.map(subcommand => subcommand.describe());
 
     return desc;
-  }
-
-  cooldown(message, threshold) {
-    assert(
-      message instanceof Discord.Message,
-      'The parameter message for Command.cooldown must be a valid discord message',
-    );
-
-    assert(
-      typeof threshold === 'number',
-      'The parameter threshold for Command.cooldown must be a number greater than 0',
-    );
-
-    this._cooldowns[message.author.id] = new _CooldownEntry(threshold);
-
-    return this;
   }
 
   async initialize(client, addon) {
@@ -93,19 +157,13 @@ class _Command extends _Resource.Resource {
     assert(Array.isArray(args), 'The parameter args for Command.run must be an array');
 
     // Cooldown
+    const entry = this.cooldowns.active(message);
 
-    const id = message.author.id;
-    const cooldown = this._cooldowns[id];
+    if (entry) {
+      this.error('command.cooldown', { message, remainingTime: entry.remainingTime });
 
-    if (cooldown !== undefined) {
-      if (cooldown.active) {
-        this.error('command.cooldown', { message, args, remainingTime: cooldown.remainingTime });
-
-        return;
-      }
+      return;
     }
-
-    delete this._cooldowns[id];
 
     if (this.opts.args !== undefined) {
       const desc = this.opts.args.describe();
