@@ -34,7 +34,7 @@ function _nameFromScope(scope) {
   return `_${scope}s`;
 }
 
-function _isValidScope(scope) {
+function _validScope(scope) {
   return scope === 'user' || scope === 'guild';
 }
 
@@ -57,18 +57,21 @@ class _Cooldowns {
     );
 
     assert(
-      _isValidScope(scope),
+      _validScope(scope),
       'The parameter scope for Cooldowns.add must be either user or guild',
     );
 
-    this[_nameFromScope(scope)][_idFromScope(message, scope)] = new _CooldownEntry(threshold);
+    const name = _nameFromScope(scope);
+    const id = _idFromScope(message, scope);
+
+    this[name][id] = new _CooldownEntry(threshold);
 
     return this;
   }
 
   reset(scope) {
     assert(
-      scope === undefined || _isValidScope(scope),
+      scope === undefined || _validScope(scope),
       'The parameter scope for Cooldowns.reset must be either user or guild',
     );
 
@@ -79,7 +82,9 @@ class _Cooldowns {
       return this;
     }
 
-    this[_nameFromScope(scope)] = {};
+    const name = _nameFromScope(scope);
+
+    this[name] = {};
 
     return this;
   }
@@ -88,11 +93,14 @@ class _Cooldowns {
     _assertDiscord.message('Cooldowns.remove', message);
 
     assert(
-      _isValidScope(scope),
+      _validScope(scope),
       'The parameter scope for Cooldowns.remove must be either user or guild',
     );
 
-    delete this[_nameFromScope(scope)][_idFromScope(message, scope)];
+    const name = _nameFromScope(scope);
+    const id = _idFromScope(message, scope);
+
+    delete this[name][id];
   }
 
   active(message) {
