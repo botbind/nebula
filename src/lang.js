@@ -25,7 +25,7 @@ class _Lang extends _Resource.Resource {
   render(key, terms = {}) {
     assert(typeof key === 'string', 'The parameter key for Lang.render must be a string');
 
-    assert(isObject(terms), 'The parameter local for Lang.render must be an object');
+    assert(isObject(terms), 'The parameter terms for Lang.render must be an object');
 
     const template = this._dictionary[key];
 

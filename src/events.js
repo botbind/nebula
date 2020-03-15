@@ -2,7 +2,7 @@ const assert = require('@botbind/dust/src/assert');
 const isObject = require('@botbind/dust/src/isObject');
 const symbols = require('./symbols');
 const _Resource = require('./internals/_resource');
-const _assertErrorParams = require('./internals/_assertErrorParams');
+const _runErrorCustomizer = require('./internals/_runErrorCustomizer');
 
 const _eventSymbol = Symbol('__EVENT__');
 
@@ -40,7 +40,9 @@ class _Event extends _Resource.Resource {
   }
 
   async error(code, ctx) {
-    _assertErrorParams('Event.error', code, ctx);
+    const next = await _runErrorCustomizer(this, 'Event.error', code, ctx);
+
+    if (!next) return;
 
     if (this.opts.error !== undefined) {
       const result = await this.opts.error(this, code, ctx);

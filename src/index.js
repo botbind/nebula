@@ -12,5 +12,6 @@ module.exports = {
   ...Lang,
   language: Lang.lang,
   isLanguage: Lang.isLang,
+  jsonProvider: require('./jsonProvider'),
   symbols: require('./symbols'),
 };

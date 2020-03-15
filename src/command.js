@@ -3,11 +3,10 @@ const isObject = require('@botbind/dust/src/isObject');
 const clone = require('@botbind/dust/src/clone');
 const L = require('@botbind/lyra');
 const Discord = require('discord.js');
-const symbols = require('./symbols');
 const _Resource = require('./internals/_resource');
 const _runCommands = require('./internals/_runCommands');
 const _assertDiscord = require('./internals/_assertDiscord');
-const _assertErrorParams = require('./internals/_assertErrorParams');
+const _runErrorCustomizer = require('./internals/_runErrorCustomizer');
 
 const _commandSymbol = Symbol('__COMMAND__');
 
@@ -216,13 +215,9 @@ class _Command extends _Resource.Resource {
   }
 
   async error(code, ctx) {
-    _assertErrorParams('Command.error', code, ctx);
+    const next = await _runErrorCustomizer(this, 'Command.error', code, ctx);
 
-    if (this.opts.error !== undefined) {
-      const result = await this.opts.error(this, code, ctx);
-
-      if (result !== symbols.next) return;
-    }
+    if (!next) return;
 
     if (code === 'command.initialize')
       this.client.logger.error(

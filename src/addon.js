@@ -2,11 +2,10 @@ const assert = require('@botbind/dust/src/assert');
 const isObject = require('@botbind/dust/src/isObject');
 const path = require('path');
 const fs = require('fs').promises;
-const symbols = require('./symbols');
 const _Resource = require('./internals/_resource');
 const _runCommands = require('./internals/_runCommands');
 const _assertDiscord = require('./internals/_assertDiscord');
-const _assertErrorParams = require('./internals/_assertErrorParams');
+const _runErrorCustomizer = require('./internals/_runErrorCustomizer');
 
 let isClient;
 const _addonSymbol = Symbol('__ADDON__');
@@ -56,7 +55,7 @@ class _Addon {
         folderStat = await fs.lstat(folderPath);
       } catch (err) {
         if (err.code !== 'ENOENT') {
-          this.error('addon.lstat', { err, path: folderPath });
+          await this.error('addon.lstat', { err, path: folderPath });
 
           process.exit(1);
         }
@@ -66,13 +65,13 @@ class _Addon {
         try {
           await fs.mkdir(folderPath, { recursive: true });
         } catch (err) {
-          this.error(err, 'addon.mkdir', { err, path: folderPath });
+          await this.error(err, 'addon.mkdir', { err, path: folderPath });
 
           process.exit(1);
         }
       else if (folderStat.isFile()) {
         // Critical
-        this.error('addon.isFile', { path: folderPath });
+        await this.error('addon.isFile', { path: folderPath });
 
         process.exit(1);
       }
@@ -93,7 +92,7 @@ class _Addon {
           fileStat = await fs.lstat(filePath);
         } catch (err) {
           // Critical
-          this.error('addon.lstat', { err, path: filePath });
+          await this.error('addon.lstat', { err, path: filePath });
 
           process.exit(1);
         }
@@ -154,13 +153,9 @@ class _Addon {
   }
 
   async error(code, ctx) {
-    _assertErrorParams('Addon.error', code, ctx);
+    const next = await _runErrorCustomizer(this, 'Addon.error', code, ctx);
 
-    if (this.opts.error !== undefined) {
-      const result = await this.opts.error(this, code, ctx);
-
-      if (result !== symbols.next) return;
-    }
+    if (!next) return;
 
     if (code === 'addon.lstat')
       this.client.logger.error('Cannot retrieve status of path', ctx.path, 'due to', ctx.err);

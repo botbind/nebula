@@ -4,8 +4,9 @@ const display = require('@botbind/dust/src/display');
 const Discord = require('discord.js');
 const Addon = require('./addon');
 const Colors = require('./colors');
-const symbols = require('./symbols');
-const _assertErrorParams = require('./internals/_assertErrorParams');
+const Provider = require('./provider');
+const JSONProvider = require('./jsonProvider');
+const _runErrorCustomizer = require('./internals/_runErrorCustomizer');
 
 const _clientSymbol = Symbol('__CLIENT__');
 // Private addons
@@ -37,7 +38,7 @@ function _log(...portions) {
 }
 
 class _Client extends Discord.Client {
-  constructor({ djsOpts, ...opts }) {
+  constructor({ djsOpts, provider, ...opts }) {
     super(djsOpts);
 
     if (opts.editResponses && opts.commandLifetime === 0)
@@ -58,11 +59,16 @@ class _Client extends Discord.Client {
       try {
         this.app = await this.fetchApplication();
       } catch (err) {
-        this.error('client.app', { err });
+        await this.error('client.app', { err });
 
         // Crit
         process.exit(1);
       }
+
+      // Provider
+      await provider.initialize(this);
+
+      this.provider = provider;
 
       const addons = [...this.addons, ..._addons];
 
@@ -151,14 +157,15 @@ class _Client extends Discord.Client {
     return this;
   }
 
+  destroy() {
+    this.provider.destroy();
+    super.destroy();
+  }
+
   async error(code, ctx) {
-    _assertErrorParams('Client.error', code, ctx);
+    const next = await _runErrorCustomizer(this, 'Client.error', code, ctx);
 
-    if (this.opts.err !== undefined) {
-      const result = await this.opts.error(this, code, ctx);
-
-      if (result !== symbols.next) return;
-    }
+    if (!next) return;
 
     if (code === 'client.app') _logger.error('Cannot fetch application due to', ctx.err);
 
@@ -177,8 +184,11 @@ function client(opts = {}) {
     typing: false,
     editResponses: false,
     commandLifetime: 0,
+    provider: JSONProvider,
     ...opts,
   };
+
+  assert(typeof opts.baseDir === 'string', 'The option baseDir for client must be a string');
 
   assert(typeof opts.prefix === 'string', 'The option prefix for client must be a string');
 
@@ -197,6 +207,11 @@ function client(opts = {}) {
   assert(
     typeof opts.commandLifetime === 'number',
     'The option commandLifetime for client must be a number',
+  );
+
+  assert(
+    Provider.isProvider(opts.provider),
+    'The option provider for client must be a valid provider',
   );
 
   ['initialize', 'error'].forEach(optName =>
