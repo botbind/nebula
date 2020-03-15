@@ -39,7 +39,7 @@ const italic = Nebula.command({
 
 module.exports = Nebula.command({
   name: 'repeat',
-  description: 'Repeat',
+  description: 'Repeat what you said!',
   alias: ['say', 'speak'],
   subcommands: [bold, italic],
 

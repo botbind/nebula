@@ -12,7 +12,7 @@ client.on('nebulaReady', () => {
   client.logger.success('Client ready!');
 });
 
-client.login(process.env.NODE_ENV.DISCORD_TOKEN);
+client.login(process.env.DISCORD_TOKEN);
 
 process.on('unhandledRejection', err => {
   console.log(err);
