@@ -20,7 +20,7 @@ class _Provider {
     this.client = client;
 
     try {
-      this.opts.initialize(this);
+      await this.opts.initialize(this);
     } catch (err) {
       // All errors originated from provider are critical
       await this.error('provider.initialize', { err });
@@ -39,7 +39,7 @@ class _Provider {
     if (!next) return;
 
     if (code === 'provider.initialize')
-      this.client.logger.error('Cannot run the custom initializer for provider due to', ctx.error);
+      this.client.logger.error('Cannot run the custom initializer for provider due to', ctx.err);
   }
 }
 
