@@ -3,6 +3,7 @@ const Nebula = require('../src');
 const Repeater = require('./addons/repeater');
 
 const client = Nebula.client({
+  baseDir: __dirname,
   lang: 'vi-VN',
 });
 
