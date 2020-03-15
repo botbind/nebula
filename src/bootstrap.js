@@ -1,7 +1,11 @@
 const Discord = require('discord.js');
 
 // Response editing
-Discord.Structures.extend('Message', Message => Message);
+Discord.Structures.extend('Message', DjsMessage => {
+  return class Message extends DjsMessage {};
+});
 
 // Providers
-Discord.Structures.extend('Guild', Guild => Guild);
+Discord.Structures.extend('Guild', DjsGuild => {
+  return class Guild extends DjsGuild {};
+});
