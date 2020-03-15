@@ -6,21 +6,23 @@ const Discord = require('discord.js');
 const symbols = require('./symbols');
 const _Resource = require('./internals/_resource');
 const _runCommands = require('./internals/_runCommands');
+const _assertDiscord = require('./internals/_assertDiscord');
+const _assertErrorParams = require('./internals/_assertErrorParams');
 
 const _commandSymbol = Symbol('__COMMAND__');
 
 class _CooldownEntry {
   constructor(threshold) {
-    this._timestamp = Date.now();
-    this._threshold = threshold;
+    this.timestamp = Date.now();
+    this.threshold = threshold;
     this.remainingTime = null;
   }
 
   get active() {
-    const diff = Date.now() - this._timestamp;
+    const diff = Date.now() - this.timestamp;
 
-    if (diff <= this._threshold) {
-      this.remainingTime = this._threshold - diff;
+    if (diff <= this.threshold) {
+      this.remainingTime = this.threshold - diff;
 
       return true;
     }
@@ -41,13 +43,19 @@ class _Command extends _Resource.Resource {
   }
 
   describe() {
-    return {
-      name: this.name,
-      description: this.description,
-      alias: clone(this.alias),
-      args: this.opts.args.describe(),
-      subcommands: this.opts.subcommands.map(subcommand => subcommand.describe()),
-    };
+    const desc = {};
+
+    desc.name = this.name;
+    desc.description = this.description;
+
+    if (this.alias.length > 0) desc.alias = clone(this.alias);
+
+    if (this.opts.args !== undefined) desc.args = this.opts.args.describe();
+
+    if (this.opts.subcommands.length > 0)
+      desc.subcommands = this.opts.subcommands.map(subcommand => subcommand.describe());
+
+    return desc;
   }
 
   cooldown(message, threshold) {
@@ -80,6 +88,10 @@ class _Command extends _Resource.Resource {
   }
 
   async run(message, args) {
+    _assertDiscord.message('Command.run', message);
+
+    assert(Array.isArray(args), 'The parameter args for Command.run must be an array');
+
     // Cooldown
 
     const id = message.author.id;
@@ -146,6 +158,8 @@ class _Command extends _Resource.Resource {
   }
 
   async error(code, ctx) {
+    _assertErrorParams('Command.error', code, ctx);
+
     if (this.opts.error !== undefined) {
       const result = await this.opts.error(this, code, ctx);
 

@@ -5,6 +5,7 @@ const Discord = require('discord.js');
 const Addon = require('./addon');
 const Colors = require('./colors');
 const symbols = require('./symbols');
+const _assertErrorParams = require('./internals/_assertErrorParams');
 
 const _clientSymbol = Symbol('__CLIENT__');
 // Private addons
@@ -130,6 +131,15 @@ class _Client extends Discord.Client {
     return `https://discordapp.com/oauth2/authorize?client_id=${this.app.id}&permissions=${perms.bitfield}&scope=bot`;
   }
 
+  describe() {
+    const addons = [...this.addons, ..._addons];
+    const desc = {};
+
+    if (addons.length > 0) desc.addons = addons.map(addon => addon.describe());
+
+    return desc;
+  }
+
   inject(addon, opts) {
     if (typeof addon === 'function') addon = addon(opts);
 
@@ -142,6 +152,8 @@ class _Client extends Discord.Client {
   }
 
   async error(code, ctx) {
+    _assertErrorParams('Client.error', code, ctx);
+
     if (this.opts.err !== undefined) {
       const result = await this.opts.error(this, code, ctx);
 

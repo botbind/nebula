@@ -5,7 +5,10 @@ const fs = require('fs').promises;
 const symbols = require('./symbols');
 const _Resource = require('./internals/_resource');
 const _runCommands = require('./internals/_runCommands');
+const _assertDiscord = require('./internals/_assertDiscord');
+const _assertErrorParams = require('./internals/_assertErrorParams');
 
+let isClient;
 const _addonSymbol = Symbol('__ADDON__');
 const _types = ['commands', 'tasks', 'events'];
 
@@ -37,6 +40,11 @@ class _Addon {
   }
 
   async initialize(client) {
+    // eslint-disable-next-line global-require
+    isClient = isClient === undefined ? require('./client').isClient : isClient;
+
+    assert(isClient(client), 'The parameter client for Addon.initialize must be a valid client');
+
     this.client = client;
 
     for (const type of [..._types, 'languages']) {
@@ -126,6 +134,8 @@ class _Addon {
   }
 
   async run(message) {
+    _assertDiscord.message('Addon.run', message);
+
     if (this.opts.run !== undefined) {
       this.opts.run(this, message);
 
@@ -144,6 +154,8 @@ class _Addon {
   }
 
   async error(code, ctx) {
+    _assertErrorParams('Addon.error', code, ctx);
+
     if (this.opts.error !== undefined) {
       const result = await this.opts.error(this, code, ctx);
 

@@ -1,3 +1,8 @@
+const assert = require('@botbind/dust/src/assert');
+
+let isClient;
+let isAddon;
+
 const _resourceSymbol = Symbol('__RESOURCE__');
 
 class _Resource {
@@ -12,6 +17,15 @@ class _Resource {
   }
 
   initialize(client, addon) {
+    /* eslint-disable global-require */
+    isClient = isClient === undefined ? require('../client').isClient : isClient;
+    isAddon = isAddon === undefined ? require('../addon').isAddon : isAddon;
+    /* eslint-enable global-require */
+
+    assert(isClient(client), 'The parameter client for Resource.initialize must be a valid client');
+
+    assert(isAddon(addon), 'The parameter addon for Resource.initialize must be a valid addon');
+
     this.client = client;
     this.addon = addon;
   }
