@@ -107,7 +107,9 @@ class _Cooldowns {
     _assertDiscord.message('Cooldowns.check', message);
 
     for (const scope of ['user', 'guild']) {
-      const entry = this[_nameFromScope(scope)][_idFromScope(message, scope)];
+      const name = _nameFromScope(scope);
+      const id = _idFromScope(message, scope);
+      const entry = this[name][id];
 
       if (entry !== undefined && entry.active) return entry;
 
