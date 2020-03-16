@@ -46,7 +46,7 @@ Object.defineProperty(_Logger.prototype, _loggerSymbol, { value: true });
 function logger(opts = {}) {
   assert(isObject(opts), 'The parameter opts for logger must be an object');
 
-  _methods.forEach(optName =>
+  _methods.forEach(([optName]) =>
     assert(
       opts[optName] === undefined || typeof opts[optName] === 'function',
       'The option',
