@@ -13,11 +13,11 @@ const _types = ['commands', 'tasks', 'events'];
 
 class _Addon {
   constructor({ name, ...opts }) {
+    this._opts = opts;
+
     this.client = null;
     this.name = name;
-    this.opts = opts;
-    // Addon-specific variable container
-    this.vars = {};
+    this.vars = {}; // Addon-specific variable container
 
     // Resources
     this.lang = null;
@@ -48,7 +48,7 @@ class _Addon {
 
     for (const type of [..._types, 'languages']) {
       const isLang = type === 'languages';
-      const folderPath = path.resolve(this.opts.baseDir, type);
+      const folderPath = path.resolve(this._opts.baseDir, type);
       let folderStat;
 
       try {
@@ -110,7 +110,7 @@ class _Addon {
           'must be valid resource',
         );
 
-        if (isLang && resource.name !== this.client.opts.lang) continue;
+        if (isLang && resource.name !== this.client._opts.lang) continue;
 
         await resource.initialize(client, this);
 
@@ -124,9 +124,9 @@ class _Addon {
       }
     }
 
-    if (this.opts.initialize !== undefined)
+    if (this._opts.initialize !== undefined)
       try {
-        await this.opts.initialize(this);
+        await this._opts.initialize(this);
       } catch (err) {
         this.error('addon.initialize', { err });
       }
@@ -135,13 +135,13 @@ class _Addon {
   async run(message) {
     _assertDiscord.message('Addon.run', message);
 
-    if (this.opts.run !== undefined) {
-      this.opts.run(this, message);
+    if (this._opts.run !== undefined) {
+      this._opts.run(this, message);
 
       return;
     }
 
-    const prefix = this.client.opts.prefix;
+    const prefix = this.client.provider.get('prefix');
     const content = message.content;
 
     if (!content.startsWith(prefix) || message.author.bot) return;
@@ -184,7 +184,19 @@ Object.defineProperty(_Addon.prototype, _addonSymbol, { value: true });
 function addon(opts = {}) {
   assert(isObject(opts), 'The parameter opts for addon must be an object');
 
+  opts = {
+    public: true,
+    ...opts,
+  };
+
   assert(typeof opts.name === 'string', 'The option name for addon must be a string');
+
+  assert(
+    typeof opts.public === 'boolean',
+    'The option public for addon',
+    opts.name,
+    'must be a boolean',
+  );
 
   assert(
     typeof opts.baseDir === 'string',

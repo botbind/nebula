@@ -1,6 +1,5 @@
 const assert = require('@botbind/dust/src/assert');
 const isObject = require('@botbind/dust/src/isObject');
-const symbols = require('./symbols');
 const _Resource = require('./internals/_resource');
 const _runErrorCustomizer = require('./internals/_runErrorCustomizer');
 
@@ -10,22 +9,22 @@ class _Event extends _Resource.Resource {
   constructor({ name, ...opts }) {
     super(name);
 
-    this.opts = opts;
+    this._opts = opts;
   }
 
   describe() {
     return {
       name: this.name,
-      once: this.opts.once,
+      once: this._opts.once,
     };
   }
 
   async initialize(client, addon) {
     super.initialize(client, addon);
 
-    if (this.opts.initialize !== undefined)
+    if (this._opts.initialize !== undefined)
       try {
-        await this.opts.initialize(this);
+        await this._opts.initialize(this);
       } catch (err) {
         this.error('event.initialize', { err });
       }
@@ -33,7 +32,7 @@ class _Event extends _Resource.Resource {
 
   async run(...args) {
     try {
-      await this.opts.run(this, ...args);
+      await this._opts.run(this, ...args);
     } catch (err) {
       this.error('event.run', { err, args });
     }
@@ -43,12 +42,6 @@ class _Event extends _Resource.Resource {
     const next = await _runErrorCustomizer(this, 'Event.error', code, ctx);
 
     if (!next) return;
-
-    if (this.opts.error !== undefined) {
-      const result = await this.opts.error(this, code, ctx);
-
-      if (result !== symbols.next) return;
-    }
 
     if (code === 'event.initialize')
       this.client.logger.error(

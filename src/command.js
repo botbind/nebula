@@ -61,10 +61,7 @@ class _Cooldowns {
       'The parameter scope for Cooldowns.add must be either user or guild',
     );
 
-    const name = _nameFromScope(scope);
-    const id = _idFromScope(message, scope);
-
-    this[name][id] = new _CooldownEntry(threshold);
+    this[_nameFromScope(scope)][_idFromScope(message, scope)] = new _CooldownEntry(threshold);
 
     return this;
   }
@@ -82,9 +79,7 @@ class _Cooldowns {
       return this;
     }
 
-    const name = _nameFromScope(scope);
-
-    this[name] = {};
+    this[_nameFromScope(scope)] = {};
 
     return this;
   }
@@ -97,19 +92,14 @@ class _Cooldowns {
       'The parameter scope for Cooldowns.remove must be either user or guild',
     );
 
-    const name = _nameFromScope(scope);
-    const id = _idFromScope(message, scope);
-
-    delete this[name][id];
+    delete this[_nameFromScope(scope)][_idFromScope(message, scope)];
   }
 
   active(message) {
     _assertDiscord.message('Cooldowns.check', message);
 
     for (const scope of ['user', 'guild']) {
-      const name = _nameFromScope(scope);
-      const id = _idFromScope(message, scope);
-      const entry = this[name][id];
+      const entry = this[_nameFromScope(scope)][_idFromScope(message, scope)];
 
       if (entry !== undefined && entry.active) return entry;
 
@@ -124,10 +114,10 @@ class _Command extends _Resource.Resource {
   constructor({ name, description, alias, ...opts }) {
     super(name);
 
+    this._opts = opts;
+
     this.description = description;
     this.alias = alias;
-    this.opts = opts;
-
     this.cooldowns = new _Cooldowns();
   }
 
@@ -139,10 +129,10 @@ class _Command extends _Resource.Resource {
 
     if (this.alias.length > 0) desc.alias = clone(this.alias);
 
-    if (this.opts.args !== undefined) desc.args = this.opts.args.describe();
+    if (this._opts.args !== undefined) desc.args = this._opts.args.describe();
 
-    if (this.opts.subcommands.length > 0)
-      desc.subcommands = this.opts.subcommands.map(subcommand => subcommand.describe());
+    if (this._opts.subcommands.length > 0)
+      desc.subcommands = this._opts.subcommands.map(subcommand => subcommand.describe());
 
     return desc;
   }
@@ -150,11 +140,11 @@ class _Command extends _Resource.Resource {
   async initialize(client, addon) {
     super.initialize(client, addon);
 
-    for (const subcommand of this.opts.subcommands) await subcommand.initialize(client, addon);
+    for (const subcommand of this._opts.subcommands) await subcommand.initialize(client, addon);
 
-    if (this.opts.initialize !== undefined)
+    if (this._opts.initialize !== undefined)
       try {
-        await this.opts.initialize(this);
+        await this._opts.initialize(this);
       } catch (err) {
         this.error('command.initialize', { err });
       }
@@ -174,8 +164,8 @@ class _Command extends _Resource.Resource {
       return;
     }
 
-    if (this.opts.args !== undefined) {
-      const desc = this.opts.args.describe();
+    if (this._opts.args !== undefined) {
+      const desc = this._opts.args.describe();
 
       if (desc.type !== 'array' || desc.type === 'object') args = args[0];
 
@@ -189,7 +179,7 @@ class _Command extends _Resource.Resource {
         args = argObj;
       }
 
-      const result = this.opts.args.validate(args, {
+      const result = this._opts.args.validate(args, {
         context: {
           message,
         },
@@ -206,19 +196,19 @@ class _Command extends _Resource.Resource {
       args = result.value;
     }
 
-    if (this.opts.subcommands.length > 0) {
+    if (this._opts.subcommands.length > 0) {
       const name = args.shift();
 
-      const notFound = await _runCommands(message, name, args, this.opts.subcommands);
+      const notFound = await _runCommands(message, name, args, this._opts.subcommands);
 
       if (notFound) this.error('command.subcommandNotFound', { message, name, args });
 
       return;
     }
 
-    if (this.opts.run !== undefined)
+    if (this._opts.run !== undefined)
       try {
-        await this.opts.run(this, message, args);
+        await this._opts.run(this, message, args);
       } catch (err) {
         this.error('command.run', { err, message });
       }

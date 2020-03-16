@@ -9,6 +9,7 @@ module.exports = {
   ...require('./command'),
   ...require('./events'),
   ...require('./provider'),
+  ...require('./logger'),
   ...Lang,
   language: Lang.lang,
   isLanguage: Lang.isLang,
