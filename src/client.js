@@ -45,10 +45,19 @@ class _Storage {
     this.client = activeClient;
     this.name = name;
     this._schema = schema;
+    this._dive = '';
+  }
+
+  dive(path) {
+    this._dive = path;
+
+    return this;
   }
 
   extend(schema) {
     this._schema = this._schema.merge(Lyra.compile(schema));
+
+    return this;
   }
 
   async set(path, value, opts = {}) {
@@ -67,6 +76,8 @@ class _Storage {
 
     // Discard other options
     opts = { separator: opts.separator };
+
+    path = `${this._dive}${opts.separator}${path}`;
 
     const schema = this._schema.extract(path, opts);
 
@@ -94,7 +105,11 @@ class _Storage {
     } else if (action === 'add') {
       value = { ...currValue, ...value };
     } else {
-      const keys = Array.isArray(value) ? value : Object.keys(value);
+      let keys;
+
+      if (Array.isArray(value)) keys = value;
+      else if (typeof value === 'string') keys = [value];
+      else keys = Object.keys(value);
 
       value = currValue;
 
